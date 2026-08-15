@@ -6,6 +6,12 @@ A [DeepSeek Harness](https://github.com/deepseek-ai/deepseek-harness) client plu
 Spent ¥0.12 | Balance ¥47.17 | Peak | ¥27.0⁺/M output
 ```
 
+![badge](https://github.com/lancecheney/dsh-plugins/raw/main/docs/screenshot.png)
+
+Clicking the badge opens a right-side drawer with full usage stats:
+
+![panel](https://github.com/lancecheney/dsh-plugins/raw/main/docs/panel.png)
+
 ## Features
 
 - **Balance** — live DeepSeek API balance from `GET /user/balance`, proxied server-side so your API key never reaches the browser.

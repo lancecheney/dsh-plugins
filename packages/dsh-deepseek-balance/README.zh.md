@@ -6,6 +6,12 @@
 消耗 ¥0.12 | 余额 ¥47.17 | 高峰 | ¥27.0⁺/M 输出
 ```
 
+![徽章](https://github.com/lancecheney/dsh-plugins/raw/main/docs/screenshot.png)
+
+点开徽章会打开右侧抽屉面板，展示完整用量统计：
+
+![面板](https://github.com/lancecheney/dsh-plugins/raw/main/docs/panel.png)
+
 ## 功能
 
 - **余额** — 实时 DeepSeek API 余额（`GET /user/balance`），由服务端代理请求，浏览器不会接触你的 API Key。
