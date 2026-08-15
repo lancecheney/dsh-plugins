@@ -1,4 +1,0 @@
-# dsh-collapse-process bundle patch: inserts this plugin row into the host composition.
-- insert:
-    - id: collapse-process
-      name: '@lancecheney/dsh-collapse-process'
