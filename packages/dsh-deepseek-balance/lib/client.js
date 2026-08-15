@@ -157,10 +157,10 @@ window.__ModuleLoader__.load({
 				if (!frame) return;
 				const apply = () => { const w = sidebarWidthOf(frame); if (w !== null) setSidebarW(w); };
 				apply();
-				const ro = new ResizeObserver(apply);
-				ro.observe(frame);
+				const mo = new MutationObserver(apply);
+				mo.observe(frame, { attributes: true, attributeFilter: ["style"] });
 				window.addEventListener("resize", apply);
-				return () => { ro.disconnect(); window.removeEventListener("resize", apply); };
+				return () => { mo.disconnect(); window.removeEventListener("resize", apply); };
 			}, []);
 
 			const months = react.useMemo(() => {
