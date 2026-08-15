@@ -15,6 +15,9 @@ import { zstdDecompressSync } from "node:zlib";
 
 const name = "deepseek-balance";
 const inject = ["webServer", "credentials", "settings"];
+const Config = z.object({
+	tokenName: z.string().default("DeepSeek")
+});
 
 const DEFAULT_BASE_URL = "https://api.deepseek.com";
 const DEFAULT_KEY_ENV = "DEEPSEEK_API_KEY";
@@ -566,13 +569,13 @@ const USAGE_CACHE_TTL_MS = 60000;
 async function maskApiKey(ctx) {
 	try {
 		const { apiKey } = await resolveDeepSeekFacts(ctx);
-		return `${apiKey.slice(0, 4)}****`;
+		return apiKey.length > 12 ? `${apiKey.slice(0, 8)}*****${apiKey.slice(-4)}` : `${apiKey.slice(0, 8)}****`;
 	} catch {
 		return null;
 	}
 }
 
-function apply(ctx) {
+function apply(ctx, config = {}) {
 	ctx.inject(["sessionProjections"], (projectionCtx) => {
 		projectionCtx.sessionProjections.register(tokenUsageByPeriodProjection);
 	});
@@ -654,6 +657,7 @@ function apply(ctx) {
 		json(res, 200, {
 			...(usageCache.data || aggregateSessions()),
 			apiKeyPreview: key,
+			tokenName: config.tokenName || "DeepSeek",
 			effectiveFrom: pricing.data.effectiveFrom,
 			fetchedAt: usageCache.at,
 			source: pricing.source
@@ -677,4 +681,4 @@ function apply(ctx) {
 	}, "deepseek-balance: daily 01:00 Beijing pricing refresh");
 }
 
-export { apply, inject, name };
+export { Config, apply, inject, name };

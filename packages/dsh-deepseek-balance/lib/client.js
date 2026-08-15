@@ -7,7 +7,7 @@ window.__ModuleLoader__.load({
 		let react = require("react");
 
 		const css = ".Dbg1_root{display:inline-flex;align-items:center;gap:6px;height:32px;border:1px solid var(--dsw-alias-border-l2);border-radius:18px;padding:0 12px;font-family:var(--dsw-font-family);font-size:12px;line-height:18px;color:var(--dsw-alias-label-secondary);background:0 0;white-space:nowrap;cursor:pointer}.Dbg1_root:hover{background:var(--dsw-alias-interactive-bg-hover)}.Dbg1_num{color:var(--dsw-alias-label-primary);font-variant-numeric:tabular-nums;font-weight:500}.Dbg1_sep{color:var(--dsw-alias-label-dimmed)}.Dbg1_chip{border-radius:9px;padding:0 8px;font-size:11px;line-height:18px;font-weight:600}.Dbg1_peak{color:var(--dsw-alias-state-warn-primary)}.Dbg1_offPeak{color:var(--dsw-alias-state-success-primary)}.Dbg1_legacy{color:var(--dsw-alias-label-tertiary)}.Dbg1_dimmed{color:var(--dsw-alias-label-dimmed)}.Dbg1_plus{font-size:9px;line-height:1;vertical-align:super;color:var(--dsw-alias-state-warn-primary);font-weight:700}.Dbg1_unit{font-size:10px}";
-		const css2 = ".Dp1_backdrop{position:fixed;top:0;bottom:0;right:0;background:rgba(0,0,0,.32);z-index:60}.Dp1_panel{position:fixed;top:0;bottom:0;right:0;z-index:61;display:flex;flex-direction:column;background:var(--dsw-alias-bg-base);border-left:1px solid var(--dsw-alias-border-l1);box-shadow:var(--dsw-shadow-lv3);overflow-y:auto}.Dp1_head{display:flex;align-items:center;gap:10px;padding:16px}.Dp1_avatar{width:40px;height:40px;border-radius:50%;background:var(--dsw-alias-fill-l2);color:var(--dsw-alias-label-primary);display:flex;align-items:center;justify-content:center;font-weight:700;font-size:14px;flex:none}.Dp1_key{font-family:var(--dsw-font-mono);color:var(--dsw-alias-label-secondary);font-size:13px}.Dp1_close{margin-left:auto;cursor:pointer;background:0 0;border:0;color:var(--dsw-alias-label-secondary);font-size:20px;line-height:1}.Dp1_body{padding:0 16px 24px;display:flex;flex-direction:column;gap:20px}.Dp1_section{border:1px solid var(--dsw-alias-border-l2);border-radius:12px;padding:12px 14px}.Dp1_title{font-size:12px;color:var(--dsw-alias-label-tertiary);margin:0 0 10px;font-weight:600;letter-spacing:.02em}.Dp1_stats{display:grid;grid-template-columns:repeat(3,1fr);gap:10px}.Dp1_stat{background:var(--dsw-alias-fill-l1);border-radius:8px;padding:10px}.Dp1_statLabel{font-size:11px;color:var(--dsw-alias-label-tertiary)}.Dp1_statValue{font-size:16px;font-weight:600;color:var(--dsw-alias-label-primary);margin-top:4px;font-variant-numeric:tabular-nums}.Dp1_row{display:flex;align-items:center;gap:8px;padding:7px 0;border-bottom:1px solid var(--dsw-alias-border-l2)}.Dp1_row:last-child{border-bottom:none}.Dp1_rowTitle{flex:1;min-width:0;color:var(--dsw-alias-label-primary);font-size:13px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}.Dp1_rowTitleGray{color:var(--dsw-alias-label-dimmed)}.Dp1_rowVal{color:var(--dsw-alias-label-secondary);font-variant-numeric:tabular-nums;font-size:12px;flex:none}.Dp1_rank{color:var(--dsw-alias-label-tertiary);width:16px;text-align:right;flex:none;font-size:12px}.Dp1_btn{display:inline-flex;align-items:center;justify-content:center;height:32px;padding:0 14px;border-radius:8px;border:1px solid var(--dsw-alias-border-l2);background:0 0;color:var(--dsw-alias-label-primary);cursor:pointer;font-size:13px}.Dp1_btn:hover{background:var(--dsw-alias-interactive-bg-hover)}.Dp1_btnPrimary{background:var(--dsw-alias-state-success-primary);color:#fff;border:none}.Dp1_monthNav{display:flex;align-items:center;justify-content:space-between;margin-bottom:8px}.Dp1_grid{display:grid;grid-template-columns:repeat(7,1fr);gap:4px}.Dp1_cell{aspect-ratio:1;border-radius:5px;background:var(--dsw-alias-fill-l1);display:flex;align-items:center;justify-content:center;font-size:11px;color:var(--dsw-alias-label-tertiary)}.Dp1_cellFlat{background:#bfdbfe;color:#1e3a5f}.Dp1_cellPeak{background:#fdba74;color:#7c2d12}.Dp1_cellOff{background:#86efac;color:#14532d}.Dp1_legend{display:flex;gap:14px;margin-top:8px;font-size:11px;color:var(--dsw-alias-label-tertiary);flex-wrap:wrap}.Dp1_dot{display:inline-block;width:8px;height:8px;border-radius:2px;margin-right:4px;vertical-align:middle}.Dp1_kv{display:flex;justify-content:space-between;padding:6px 0;font-size:13px}.Dp1_kvLabel{color:var(--dsw-alias-label-secondary)}.Dp1_kvVal{color:var(--dsw-alias-label-primary);font-weight:600;font-variant-numeric:tabular-nums}";
+		const css2 = ".Dp1_backdrop{position:fixed;top:0;bottom:0;right:0;background:rgba(0,0,0,.32);z-index:60}.Dp1_panel{position:fixed;top:0;bottom:0;right:0;z-index:61;display:flex;flex-direction:column;background:var(--dsw-alias-bg-base);border-left:1px solid var(--dsw-alias-border-l1);box-shadow:var(--dsw-shadow-lv3);overflow-y:auto}.Dp1_head{display:flex;flex-direction:column;align-items:center;gap:6px;padding:32px 28px 22px;position:relative}.Dp1_avatar{width:56px;height:56px;border-radius:50%;background:var(--dsw-alias-fill-l2);color:var(--dsw-alias-label-primary);display:flex;align-items:center;justify-content:center;font-weight:700;font-size:20px;flex:none}.Dp1_name{font-size:16px;font-weight:600;color:var(--dsw-alias-label-primary)}.Dp1_key{font-family:var(--dsw-font-mono);color:var(--dsw-alias-label-tertiary);font-size:12px}.Dp1_close{position:absolute;top:16px;right:16px;cursor:pointer;background:0 0;border:0;color:var(--dsw-alias-label-secondary);font-size:22px;line-height:1}.Dp1_body{padding:0 28px 36px;display:flex;flex-direction:column;gap:22px}.Dp1_stats{display:flex;align-items:center;justify-content:center;gap:16px;flex-wrap:wrap;padding:16px 0;border-top:1px solid var(--dsw-alias-border-l2);border-bottom:1px solid var(--dsw-alias-border-l2)}.Dp1_statItem{display:flex;flex-direction:column;align-items:center;gap:2px}.Dp1_statValue{font-size:15px;font-weight:600;color:var(--dsw-alias-label-primary);font-variant-numeric:tabular-nums}.Dp1_statLabel{font-size:11px;color:var(--dsw-alias-label-tertiary)}.Dp1_sepBar{color:var(--dsw-alias-label-dimmed);font-size:14px}.Dp1_balance{display:flex;flex-direction:column;align-items:center;gap:10px;padding:6px 0}.Dp1_balanceLabel{font-size:12px;color:var(--dsw-alias-label-tertiary)}.Dp1_balanceMain{font-size:34px;font-weight:700;color:var(--dsw-alias-label-primary);font-variant-numeric:tabular-nums;line-height:1.05}.Dp1_balanceSub{display:flex;gap:16px;font-size:13px;color:var(--dsw-alias-label-secondary)}.Dp1_btn{display:inline-flex;align-items:center;justify-content:center;height:36px;padding:0 22px;border-radius:999px;border:1px solid var(--dsw-alias-border-l2);background:0 0;color:var(--dsw-alias-label-primary);cursor:pointer;font-size:13px}.Dp1_btn:hover{background:var(--dsw-alias-interactive-bg-hover)}.Dp1_btnPrimary{background:var(--dsw-alias-state-success-primary);color:#fff;border:none}.Dp1_section{padding:16px 0;border-top:1px solid var(--dsw-alias-border-l2)}.Dp1_title{font-size:12px;color:var(--dsw-alias-label-tertiary);margin:0 0 12px;font-weight:600;letter-spacing:.02em}.Dp1_row{display:flex;align-items:center;gap:8px;padding:7px 0}.Dp1_rowTitle{flex:1;min-width:0;color:var(--dsw-alias-label-primary);font-size:13px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}.Dp1_rowTitleGray{color:var(--dsw-alias-label-dimmed)}.Dp1_rowVal{color:var(--dsw-alias-label-secondary);font-variant-numeric:tabular-nums;font-size:12px;flex:none}.Dp1_rank{color:var(--dsw-alias-label-tertiary);width:18px;text-align:right;flex:none;font-size:12px}.Dp1_monthNav{display:flex;align-items:center;justify-content:center;gap:16px;margin-bottom:12px}.Dp1_grid{display:grid;grid-template-columns:repeat(7,1fr);gap:5px;max-width:300px;margin:0 auto}.Dp1_cell{aspect-ratio:1;border-radius:6px;background:var(--dsw-alias-fill-l1);display:flex;align-items:center;justify-content:center;font-size:10px;color:var(--dsw-alias-label-tertiary)}.Dp1_cellFlat{background:#bfdbfe;color:#1e3a5f}.Dp1_cellPeak{background:#fdba74;color:#7c2d12}.Dp1_cellOff{background:#86efac;color:#14532d}.Dp1_legend{display:flex;gap:14px;margin-top:12px;justify-content:center;font-size:11px;color:var(--dsw-alias-label-tertiary);flex-wrap:wrap}.Dp1_dot{display:inline-block;width:8px;height:8px;border-radius:2px;margin-right:4px;vertical-align:middle}";
 		const injectCss = (text, tagId) => {
 			if (typeof document !== "undefined" && document.querySelector("style[data-plugin-css=" + JSON.stringify(tagId) + "]") === null) {
 				const tag = document.createElement("style");
@@ -20,7 +20,7 @@ window.__ModuleLoader__.load({
 		injectCss(css, "@lancecheney/dsh-deepseek-balance/BillingBadge.css");
 		injectCss(css2, "@lancecheney/dsh-deepseek-balance/UsagePanel.css");
 		const C = { root: "Dbg1_root", num: "Dbg1_num", sep: "Dbg1_sep", chip: "Dbg1_chip", peak: "Dbg1_peak", offPeak: "Dbg1_offPeak", legacy: "Dbg1_legacy", dimmed: "Dbg1_dimmed", plus: "Dbg1_plus", unit: "Dbg1_unit" };
-		const P = { backdrop: "Dp1_backdrop", panel: "Dp1_panel", head: "Dp1_head", avatar: "Dp1_avatar", key: "Dp1_key", close: "Dp1_close", body: "Dp1_body", section: "Dp1_section", title: "Dp1_title", stats: "Dp1_stats", stat: "Dp1_stat", statLabel: "Dp1_statLabel", statValue: "Dp1_statValue", row: "Dp1_row", rowTitle: "Dp1_rowTitle", rowTitleGray: "Dp1_rowTitleGray", rowVal: "Dp1_rowVal", rank: "Dp1_rank", btn: "Dp1_btn", btnPrimary: "Dp1_btnPrimary", monthNav: "Dp1_monthNav", grid: "Dp1_grid", cell: "Dp1_cell", cellFlat: "Dp1_cellFlat", cellPeak: "Dp1_cellPeak", cellOff: "Dp1_cellOff", legend: "Dp1_legend", dot: "Dp1_dot", kv: "Dp1_kv", kvLabel: "Dp1_kvLabel", kvVal: "Dp1_kvVal" };
+		const P = { backdrop: "Dp1_backdrop", panel: "Dp1_panel", head: "Dp1_head", avatar: "Dp1_avatar", name: "Dp1_name", key: "Dp1_key", close: "Dp1_close", body: "Dp1_body", stats: "Dp1_stats", statItem: "Dp1_statItem", statValue: "Dp1_statValue", statLabel: "Dp1_statLabel", sepBar: "Dp1_sepBar", balance: "Dp1_balance", balanceLabel: "Dp1_balanceLabel", balanceMain: "Dp1_balanceMain", balanceSub: "Dp1_balanceSub", btn: "Dp1_btn", btnPrimary: "Dp1_btnPrimary", section: "Dp1_section", title: "Dp1_title", row: "Dp1_row", rowTitle: "Dp1_rowTitle", rowTitleGray: "Dp1_rowTitleGray", rowVal: "Dp1_rowVal", rank: "Dp1_rank", monthNav: "Dp1_monthNav", grid: "Dp1_grid", cell: "Dp1_cell", cellFlat: "Dp1_cellFlat", cellPeak: "Dp1_cellPeak", cellOff: "Dp1_cellOff", legend: "Dp1_legend", dot: "Dp1_dot" };
 
 		const MODEL_META = { "deepseek-v4-pro": { label: "DeepSeek-V4-Pro" }, "deepseek-v4-flash": { label: "DeepSeek-V4-Flash" } };
 		const FALLBACK_PRICING = {
@@ -42,13 +42,13 @@ window.__ModuleLoader__.load({
 		function translate(dict, key, params) { let s = dict[key]; if (s === void 0) return key; if (params) for (const [k, v] of Object.entries(params)) s = s.split(`{${k}}`).join(String(v)); return s; }
 		function fmtTokens(n) { if (!Number.isFinite(n)) return "—"; if (n < 1000) return String(Math.round(n)); const scaled = (v) => v >= 100 ? String(Math.round(v)) : String(Math.round(v * 10) / 10); if (n < 1e6) return scaled(n / 1e3) + "K"; return scaled(n / 1e6) + "M"; }
 		function fmtDuration(ms) { if (!Number.isFinite(ms) || ms <= 0) return "—"; const s = ms / 1e3; if (s < 60) return Math.round(s) + "s"; const w = Math.round(s); const h = Math.floor(w / 3600); const m = Math.floor((w % 3600) / 60); if (h > 0) return h + "h" + m + "m"; return m + "m" + (w % 60) + "s"; }
+		function beijingDayKey(ms) { return new Date(ms + 8 * 3600 * 1000).toISOString().slice(0, 10); }
 		function beijingMonthKey(ms) { return new Date(ms + 8 * 3600 * 1000).toISOString().slice(0, 7); }
 		function findFrame() { if (typeof document === "undefined") return null; const overlay = document.querySelector("[data-shell-overlay]"); return overlay && overlay.parentElement ? overlay.parentElement : null; }
 		function sidebarWidthOf(frame) { const col = frame && frame.firstElementChild; return col ? col.getBoundingClientRect().width : null; }
 		const noopSubscribe = () => () => {};
-
 		function dayColor(d) { if (!d || d.tokens <= 0) return "none"; if (d.flat >= d.peak && d.flat >= d.offPeak) return "flat"; return d.peak >= d.offPeak ? "peak" : "off"; }
-
+		function spendOf(dayData, model) { if (!dayData) return 0; const c = (tokens, price) => (tokens || 0) * (price ? price.output : 0) / 1e6; const legacy = model.legacy ? c(dayData.flat, model.legacy) : 0; return legacy + c(dayData.peak, model.peak) + c(dayData.offPeak, model.offPeak); }
 		function monthGrid(year, month, daysData) {
 			const first = new Date(Date.UTC(year, month, 1));
 			const daysInMonth = new Date(Date.UTC(year, month + 1, 0)).getUTCDate();
@@ -130,12 +130,11 @@ window.__ModuleLoader__.load({
 			);
 		}
 
-		function UsagePanel({ sessionId, currency, symbol, pricing, effectiveFrom, tr, onClose }) {
+		function UsagePanel({ currency, symbol, pricing, tr, onClose }) {
 			const [usageData, setUsageData] = react.useState(null);
 			const [balance, setBalance] = react.useState(null);
 			const [sidebarW, setSidebarW] = react.useState(280);
 			const [monthIdx, setMonthIdx] = react.useState(0);
-			const rootRef = react.useRef(null);
 
 			react.useEffect(() => {
 				let alive = true;
@@ -156,7 +155,7 @@ window.__ModuleLoader__.load({
 				const frame = findFrame();
 				const col = frame && frame.firstElementChild;
 				if (!col) return;
-				const apply = () => { const w = col.getBoundingClientRect().width; setSidebarW(w); };
+				const apply = () => setSidebarW(col.getBoundingClientRect().width);
 				apply();
 				const ro = new ResizeObserver(apply);
 				ro.observe(col);
@@ -181,11 +180,11 @@ window.__ModuleLoader__.load({
 
 			const totalSpend = (() => {
 				if (!usageData) return null;
-				const flat = usageData.flatTokens ?? 0, peak = usageData.peakTokens ?? 0, off = usageData.offPeakTokens ?? 0;
 				const c = (tokens, price) => tokens * price.output / 1e6;
-				const legacyCost = model.legacy ? c(flat, model.legacy) : 0;
-				return legacyCost + c(peak, model.peak) + c(off, model.offPeak);
+				const legacyCost = model.legacy ? c(usageData.flatTokens ?? 0, model.legacy) : 0;
+				return legacyCost + c(usageData.peakTokens ?? 0, model.peak) + c(usageData.offPeakTokens ?? 0, model.offPeak);
 			})();
+			const todaySpend = usageData ? spendOf(usageData.days ? usageData.days[beijingDayKey(Date.now())] : null, model) : null;
 
 			const modelEffortList = react.useMemo(() => {
 				if (!usageData || !usageData.modelEffort) return [];
@@ -200,30 +199,34 @@ window.__ModuleLoader__.load({
 			};
 
 			const modelLabel = (k) => { const [m, e] = k.split("|"); return `${(MODEL_META[m] || {}).label || m}${e ? " · " + e : ""}`; };
+			const stat = (label, value) => react.createElement("div", { className: P.statItem }, react.createElement("div", { className: P.statValue }, value), react.createElement("div", { className: P.statLabel }, label));
+			const sepBar = (key) => react.createElement("span", { key, className: P.sepBar }, "|");
+			const tokenName = usageData && usageData.tokenName ? usageData.tokenName : "DeepSeek";
 
 			return react.createElement(react.Fragment, null,
 				react.createElement("div", { className: P.backdrop, style: { left: sidebarW + "px" }, onClick: onClose }),
-				react.createElement("div", { className: P.panel, style: { left: sidebarW + "px" }, ref: rootRef },
+				react.createElement("div", { className: P.panel, style: { left: sidebarW + "px" } },
 					react.createElement("div", { className: P.head },
-						react.createElement("div", { className: P.avatar }, (usageData && usageData.apiKeyPreview ? usageData.apiKeyPreview.slice(0, 2) : "DS").toUpperCase()),
+						react.createElement("div", { className: P.avatar }, tokenName.slice(0, 2).toUpperCase()),
+						react.createElement("div", { className: P.name }, tokenName),
 						react.createElement("div", { className: P.key }, usageData && usageData.apiKeyPreview ? usageData.apiKeyPreview : tr("balance.unavailable")),
 						react.createElement("button", { className: P.close, onClick: onClose }, "×")
 					),
 					react.createElement("div", { className: P.body },
-						react.createElement("div", { className: P.section },
-							react.createElement("h3", { className: P.title }, tr("panel.stats")),
-							react.createElement("div", { className: P.stats },
-								react.createElement("div", { className: P.stat }, react.createElement("div", { className: P.statLabel }, tr("stat.total")), react.createElement("div", { className: P.statValue }, usageData ? fmtTokens(usageData.totalTokens) : "…")),
-								react.createElement("div", { className: P.stat }, react.createElement("div", { className: P.statLabel }, tr("stat.dailyPeak")), react.createElement("div", { className: P.statValue }, usageData ? fmtTokens(usageData.dailyPeakTokens) : "…")),
-								react.createElement("div", { className: P.stat }, react.createElement("div", { className: P.statLabel }, tr("stat.longest")), react.createElement("div", { className: P.statValue }, usageData ? fmtDuration(usageData.longestChatMs) : "…")),
-								react.createElement("div", { className: P.stat }, react.createElement("div", { className: P.statLabel }, tr("stat.curStreak")), react.createElement("div", { className: P.statValue }, usageData ? usageData.currentStreak + tr("unit.day") : "…")),
-								react.createElement("div", { className: P.stat }, react.createElement("div", { className: P.statLabel }, tr("stat.longStreak")), react.createElement("div", { className: P.statValue }, usageData ? usageData.longestStreak + tr("unit.day") : "…"))
-							)
+						react.createElement("div", { className: P.stats },
+							stat(tr("stat.total"), usageData ? fmtTokens(usageData.totalTokens) : "…"), sepBar("s1"),
+							stat(tr("stat.dailyPeak"), usageData ? fmtTokens(usageData.dailyPeakTokens) : "…"), sepBar("s2"),
+							stat(tr("stat.longest"), usageData ? fmtDuration(usageData.longestChatMs) : "…"), sepBar("s3"),
+							stat(tr("stat.curStreak"), usageData ? usageData.currentStreak + tr("unit.day") : "…"), sepBar("s4"),
+							stat(tr("stat.longStreak"), usageData ? usageData.longestStreak + tr("unit.day") : "…")
 						),
-						react.createElement("div", { className: P.section },
-							react.createElement("h3", { className: P.title }, tr("panel.balance")),
-							react.createElement("div", { className: P.kv }, react.createElement("span", { className: P.kvLabel }, tr("label.balance")), react.createElement("span", { className: P.kvVal }, balance ? `${sym}${fmtMoney(Number(balance.total_balance))}` : "…")),
-							react.createElement("div", { className: P.kv }, react.createElement("span", { className: P.kvLabel }, tr("label.spent")), react.createElement("span", { className: P.kvVal }, totalSpend !== null ? `${sym}${fmtMoney(totalSpend)}` : "…")),
+						react.createElement("div", { className: P.balance },
+							react.createElement("div", { className: P.balanceLabel }, tr("label.balance")),
+							react.createElement("div", { className: P.balanceMain }, balance ? `${sym}${fmtMoney(Number(balance.total_balance))}` : "…"),
+							react.createElement("div", { className: P.balanceSub },
+								react.createElement("span", null, `${tr("stat.today")} ${todaySpend !== null ? sym + fmtMoney(todaySpend) : "…"}`), sepBar("b1"),
+								react.createElement("span", null, `${tr("stat.cumulative")} ${totalSpend !== null ? sym + fmtMoney(totalSpend) : "…"}`)
+							),
 							react.createElement("button", { className: P.btn + " " + P.btnPrimary, onClick: () => window.open("https://platform.deepseek.com/usage", "_blank", "noopener") }, tr("panel.topup"))
 						),
 						react.createElement("div", { className: P.section },
@@ -276,7 +279,7 @@ window.__ModuleLoader__.load({
 			"balance.unavailable": "余额不可用",
 			"panel.stats": "统计", "panel.balance": "余额与消耗", "panel.topup": "去官方充值",
 			"panel.topSessions": "消耗最多的对话", "panel.month": "每日时段分布", "panel.peakSessions": "高峰消耗排行", "panel.modelEffort": "模型与思考强度",
-			"stat.total": "累计 Token", "stat.dailyPeak": "每日峰值", "stat.longest": "最长聊天", "stat.curStreak": "当前连续", "stat.longStreak": "最长连续",
+			"stat.total": "累计 Token", "stat.dailyPeak": "每日峰值", "stat.longest": "最长聊天", "stat.curStreak": "当前连续", "stat.longStreak": "最长连续", "stat.today": "今日消耗", "stat.cumulative": "累计消耗",
 			"unit.day": " 天",
 			"legend.flat": "平价", "legend.peak": "高峰", "legend.off": "空闲", "legend.none": "无数据"
 		};
@@ -286,7 +289,7 @@ window.__ModuleLoader__.load({
 			"balance.unavailable": "balance unavailable",
 			"panel.stats": "Stats", "panel.balance": "Balance & Spend", "panel.topup": "Top up on DeepSeek",
 			"panel.topSessions": "Top conversations", "panel.month": "Daily period", "panel.peakSessions": "Peak-hour ranking", "panel.modelEffort": "Model & effort",
-			"stat.total": "Total tokens", "stat.dailyPeak": "Daily peak", "stat.longest": "Longest chat", "stat.curStreak": "Current streak", "stat.longStreak": "Longest streak",
+			"stat.total": "Total tokens", "stat.dailyPeak": "Daily peak", "stat.longest": "Longest chat", "stat.curStreak": "Current streak", "stat.longStreak": "Longest streak", "stat.today": "Today", "stat.cumulative": "Total",
 			"unit.day": "d",
 			"legend.flat": "Flat", "legend.peak": "Peak", "legend.off": "Off-peak", "legend.none": "None"
 		};
