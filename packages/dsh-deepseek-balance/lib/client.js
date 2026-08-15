@@ -246,8 +246,8 @@ window.__ModuleLoader__.load({
 			segs.push(react.createElement("span", { key: "price" },
 				react.createElement("span", { className: cssModule.unit }, symbol),
 				outputPrice,
-				plus !== "" ? react.createElement("span", { className: cssModule.plus }, plus) : null,
 				react.createElement("span", { className: cssModule.unit }, tr("price.perM")),
+				plus !== "" ? react.createElement("span", { className: cssModule.plus }, plus) : null,
 				` ${tr("price.unit")}`));
 
 			return react.createElement("a", { className: cssModule.root, title: tooltip, href: "https://platform.deepseek.com/usage", target: "_blank", rel: "noreferrer noopener" }, segs);
