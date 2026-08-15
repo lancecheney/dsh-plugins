@@ -157,9 +157,13 @@ window.__ModuleLoader__.load({
 				if (!frame) return;
 				let raf = 0;
 				let last = null;
-				const tick = () => {
-					const w = sidebarWidthOf(frame);
-					if (w !== null && w !== last) { last = w; setSidebarW(w); }
+				let lastCheck = 0;
+				const tick = (now) => {
+					if (now - lastCheck >= 150) {
+						lastCheck = now;
+						const w = sidebarWidthOf(frame);
+						if (w !== null && w !== last) { last = w; setSidebarW(w); }
+					}
 					raf = requestAnimationFrame(tick);
 				};
 				raf = requestAnimationFrame(tick);

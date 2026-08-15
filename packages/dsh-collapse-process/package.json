@@ -1,7 +1,7 @@
 {
   "name": "@lancecheney/dsh-collapse-process",
   "description": "Fold each completed turn's process blocks (reasoning, tool calls, context injections) into one disclosure row",
-  "version": "0.1.1",
+  "version": "0.1.2",
   "type": "module",
   "main": "lib/index.js",
   "exports": {
