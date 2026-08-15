@@ -67,26 +67,29 @@ window.__ModuleLoader__.load({
       return undefined;
     }
 
-    /** Whether a node participates in the per-turn process fold. */
-    function isFoldableNode(node) {
-      if (!node) return false;
-      if (node.kind === "assistant-step") {
-        const blocks = node.data && node.data.blocks;
-        if (!Array.isArray(blocks)) return false;
-        return !blocks.some((b) => b && b.kind === "text");
-      }
-      return FOLDABLE_KINDS.indexOf(node.kind) !== -1;
-    }
+    /** Kinds that are always "process" (never the answer). */
+    const PROCESS_KINDS = {
+      context: true,
+      "tool-call": true,
+      command: true,
+      compaction: true,
+      "manual-compaction": true,
+    };
 
-    /** Whether the turn owns at least one foldable node. */
-    function turnHasFoldable(snap, turn) {
+    /** Whether the turn owns any process node besides the closing answer. */
+    function turnHasProcess(snap, turn, closingSeq) {
       const chat = snap && snap.chat;
       if (!chat || !chat.order || !chat.nodes) return false;
       for (const key of chat.order) {
         const node = chat.nodes.get(key);
         if (!node) continue;
         if (turnOf(node) !== turn) continue;
-        if (isFoldableNode(node)) return true;
+        if (PROCESS_KINDS[node.kind]) return true;
+        if (node.kind === "assistant-step") {
+          const finalNode = node.data && node.data.finalNode;
+          if (finalNode && closingSeq !== undefined && finalNode.seq === closingSeq) continue; // the answer itself
+          return true; // any other assistant step is process
+        }
       }
       return false;
     }
@@ -163,35 +166,35 @@ window.__ModuleLoader__.load({
         const turn = turnOf(node);
         const turnDone = useSession((snap) => turn !== undefined && snap.turnEnds.has(turn));
         const turnTail = useTurnData("turn-tail");
-        const hasFoldable = useSession((snap) => turn !== undefined && turnHasFoldable(snap, turn));
 
-        const blocks = node.data && node.data.blocks;
-        const hasText = Array.isArray(blocks) && blocks.some((b) => b && b.kind === "text");
         const closingNode = turnTail && turnTail.closing ? turnTail.closing.finalNode : undefined;
         const myFinal = node.data && node.data.finalNode;
-        const isClosing = hasText && !!(closingNode && myFinal && myFinal.seq === closingNode.seq);
+        const isClosing = !!(closingNode && myFinal && myFinal.seq === closingNode.seq);
+
+        const hasProcess = useSession((snap) =>
+          turn !== undefined && turnHasProcess(snap, turn, closingNode ? closingNode.seq : undefined),
+        );
 
         if (isClosing) {
           const content = react.createElement(defaultComponent, props);
-          if (!turnDone || !hasFoldable) return content;
+          if (!turnDone || !hasProcess) return content;
           return react.createElement(
             react.Fragment,
             null,
-            content,
             react.createElement(FoldHeader, { turn, sessionId, foldT }),
+            content,
           );
         }
 
-        if (!hasText) {
-          if (
-            turn !== undefined &&
-            turnDone &&
-            turnTail &&
-            turnTail.closing &&
-            collapseStore.isCollapsed(sessionId + "#" + turn)
-          ) {
-            return null;
-          }
+        // Any assistant step that is not the closing answer is process: fold it.
+        if (
+          turn !== undefined &&
+          turnDone &&
+          turnTail &&
+          turnTail.closing &&
+          collapseStore.isCollapsed(sessionId + "#" + turn)
+        ) {
+          return null;
         }
 
         return react.createElement(defaultComponent, props);
