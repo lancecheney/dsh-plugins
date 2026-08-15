@@ -6,7 +6,7 @@ window.__ModuleLoader__.load({
 		Object.defineProperty(exports, Symbol.toStringTag, { value: "Module" });
 		let react = require("react");
 
-		const css = ".Dbg1_root{display:inline-flex;align-items:center;gap:6px;height:32px;border:1px solid var(--dsw-alias-border-l2);border-radius:18px;padding:0 12px;font-family:var(--dsw-font-family);font-size:12px;line-height:18px;color:var(--dsw-alias-label-secondary);background:0 0;white-space:nowrap;text-decoration:none;cursor:pointer}.Dbg1_root:hover{background:var(--dsw-alias-interactive-bg-hover)}.Dbg1_num{color:var(--dsw-alias-label-primary);font-variant-numeric:tabular-nums;font-weight:500}.Dbg1_sep{color:var(--dsw-alias-label-dimmed)}.Dbg1_chip{border-radius:9px;padding:0 8px;font-size:11px;line-height:18px;font-weight:600}.Dbg1_peak{color:var(--dsw-alias-state-warn-primary)}.Dbg1_offPeak{color:var(--dsw-alias-state-success-primary)}.Dbg1_legacy{color:var(--dsw-alias-label-tertiary)}.Dbg1_dimmed{color:var(--dsw-alias-label-dimmed)}.Dbg1_plus{font-size:9px;line-height:1;vertical-align:super;color:var(--dsw-alias-state-warn-primary);font-weight:700}";
+		const css = ".Dbg1_root{display:inline-flex;align-items:center;gap:6px;height:32px;border:1px solid var(--dsw-alias-border-l2);border-radius:18px;padding:0 12px;font-family:var(--dsw-font-family);font-size:12px;line-height:18px;color:var(--dsw-alias-label-secondary);background:0 0;white-space:nowrap;text-decoration:none;cursor:pointer}.Dbg1_root:hover{background:var(--dsw-alias-interactive-bg-hover)}.Dbg1_num{color:var(--dsw-alias-label-primary);font-variant-numeric:tabular-nums;font-weight:500}.Dbg1_sep{color:var(--dsw-alias-label-dimmed)}.Dbg1_chip{border-radius:9px;padding:0 8px;font-size:11px;line-height:18px;font-weight:600}.Dbg1_peak{color:var(--dsw-alias-state-warn-primary)}.Dbg1_offPeak{color:var(--dsw-alias-state-success-primary)}.Dbg1_legacy{color:var(--dsw-alias-label-tertiary)}.Dbg1_dimmed{color:var(--dsw-alias-label-dimmed)}.Dbg1_plus{font-size:9px;line-height:1;vertical-align:super;color:var(--dsw-alias-state-warn-primary);font-weight:700}.Dbg1_unit{font-size:10px}";
 		const tagId = "@lancecheney/dsh-deepseek-balance/BillingBadge.css";
 		if (typeof document !== "undefined" && document.querySelector("style[data-plugin-css=" + JSON.stringify(tagId) + "]") === null) {
 			const tag = document.createElement("style");
@@ -15,7 +15,7 @@ window.__ModuleLoader__.load({
 			tag.textContent = css;
 			document.head.appendChild(tag);
 		}
-		const cssModule = { root: "Dbg1_root", num: "Dbg1_num", sep: "Dbg1_sep", chip: "Dbg1_chip", peak: "Dbg1_peak", offPeak: "Dbg1_offPeak", legacy: "Dbg1_legacy", dimmed: "Dbg1_dimmed", plus: "Dbg1_plus" };
+		const cssModule = { root: "Dbg1_root", num: "Dbg1_num", sep: "Dbg1_sep", chip: "Dbg1_chip", peak: "Dbg1_peak", offPeak: "Dbg1_offPeak", legacy: "Dbg1_legacy", dimmed: "Dbg1_dimmed", plus: "Dbg1_plus", unit: "Dbg1_unit" };
 
 		const MODEL_META = {
 			"deepseek-v4-pro": { label: "DeepSeek-V4-Pro" },
@@ -237,9 +237,11 @@ window.__ModuleLoader__.load({
 			segs.push(react.createElement("span", { key: "period", className: `${cssModule.chip} ${periodClass}` }, periodLabel));
 			segs.push(sep("sep3"));
 			segs.push(react.createElement("span", { key: "price" },
-				`${symbol}${outputPrice}`,
+				react.createElement("span", { className: cssModule.unit }, symbol),
+				outputPrice,
 				plus !== "" ? react.createElement("span", { className: cssModule.plus }, plus) : null,
-				tr("price.suffix")));
+				react.createElement("span", { className: cssModule.unit }, tr("price.perM")),
+				` ${tr("price.unit")}`));
 
 			return react.createElement("a", { className: cssModule.root, title: tooltip, href: "https://platform.deepseek.com/usage", target: "_blank", rel: "noreferrer noopener" }, segs);
 		}
@@ -256,7 +258,8 @@ window.__ModuleLoader__.load({
 			"period.peakHours": "高峰：09:00–12:00、14:00–18:00（北京时间）",
 			"period.offPeakNote": "空闲：其余时段",
 			"balance.unavailable": "余额不可用",
-			"price.suffix": "/M 输出",
+			"price.perM": "/M",
+			"price.unit": "输出",
 			"price.row": "命中{sym}{hit}/未命中{sym}{miss}/输出{sym}{output}",
 			"cost.estimate": "按当前时段价格估算",
 			"cost.breakdown": "输入(未命中) {miss} · 输入(命中) {hit} · 输出 {output} tokens",
@@ -273,7 +276,8 @@ window.__ModuleLoader__.load({
 			"period.peakHours": "Peak: 01:00–04:00, 06:00–10:00 UTC",
 			"period.offPeakNote": "Off-peak: all other hours",
 			"balance.unavailable": "balance unavailable",
-			"price.suffix": "/M output",
+			"price.perM": "/M",
+			"price.unit": "output",
 			"price.row": "hit {sym}{hit}/miss {sym}{miss}/output {sym}{output}",
 			"cost.estimate": "estimated at the current period's price",
 			"cost.breakdown": "input(miss) {miss} · input(hit) {hit} · output {output} tokens",
