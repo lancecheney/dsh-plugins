@@ -187,6 +187,8 @@ window.__ModuleLoader__.load({
 			const outputPrice = fmtPrice(p.output);
 			const cost = usage !== undefined && usage !== null ? costOf(usage, p) : null;
 
+			// off -> base price; high (default) -> one +; max -> two +.
+			const plus = reasoningEffort === "max" ? "++" : reasoningEffort === "off" ? "" : "+";
 
 			const periodClass = isLegacy ? cssModule.legacy : isPeak ? cssModule.peak : cssModule.offPeak;
 			const periodLabel = isLegacy ? tr("period.legacy") : isPeak ? tr("period.peak") : tr("period.offPeak");
@@ -246,7 +248,7 @@ window.__ModuleLoader__.load({
 				react.createElement("span", { className: cssModule.unit }, symbol),
 				outputPrice,
 				react.createElement("span", { className: cssModule.unit }, tr("price.perM")),
-				` ${tr("price.unit")}`));
+				plus !== "" ? react.createElement("span", { className: cssModule.plus }, plus) : null));
 
 			return react.createElement("a", { className: cssModule.root, title: tooltip, href: "https://platform.deepseek.com/usage", target: "_blank", rel: "noreferrer noopener" }, segs);
 		}
@@ -268,7 +270,7 @@ window.__ModuleLoader__.load({
 			"price.row": "命中{sym}{hit}/未命中{sym}{miss}/输出{sym}{output}",
 			"cost.estimate": "按当前时段价格估算",
 			"cost.breakdown": "输入(未命中) {miss} · 输入(命中) {hit} · 输出 {output} tokens",
-			"reasoning.note": "思考链按输出 token 计费，high / max 思考会额外增加输出量"
+			"reasoning.note": "思考链按输出 token 计费；+ / ++ 表示 high / max 思考会额外增加输出量"
 		};
 		const en = {
 			"label.spent": "Spent",
@@ -286,7 +288,7 @@ window.__ModuleLoader__.load({
 			"price.row": "hit {sym}{hit}/miss {sym}{miss}/output {sym}{output}",
 			"cost.estimate": "estimated at the current period's price",
 			"cost.breakdown": "input(miss) {miss} · input(hit) {hit} · output {output} tokens",
-			"reasoning.note": "Reasoning tokens are billed as output; high / max effort adds extra output"
+			"reasoning.note": "Reasoning tokens are billed as output; + / ++ mark high / max effort which adds extra output"
 		};
 
 		const inject = ["slots", "locale"];
