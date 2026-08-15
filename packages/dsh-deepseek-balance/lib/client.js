@@ -44,7 +44,7 @@ window.__ModuleLoader__.load({
 		function fmtDuration(ms) { if (!Number.isFinite(ms) || ms <= 0) return "—"; const s = ms / 1e3; if (s < 60) return Math.round(s) + "s"; const w = Math.round(s); const h = Math.floor(w / 3600); const m = Math.floor((w % 3600) / 60); if (h > 0) return h + "h" + m + "m"; return m + "m" + (w % 60) + "s"; }
 		function beijingMonthKey(ms) { return new Date(ms + 8 * 3600 * 1000).toISOString().slice(0, 7); }
 		function findFrame() { if (typeof document === "undefined") return null; const overlay = document.querySelector("[data-shell-overlay]"); return overlay && overlay.parentElement ? overlay.parentElement : null; }
-		function sidebarWidthOf(frame) { const gt = getComputedStyle(frame).gridTemplateColumns; const m = gt.match(/(\d+(?:\.\d+)?)px/); return m ? parseFloat(m[1]) : null; }
+		function sidebarWidthOf(frame) { const col = frame && frame.firstElementChild; return col ? col.getBoundingClientRect().width : null; }
 		const noopSubscribe = () => () => {};
 
 		function dayColor(d) { if (!d || d.tokens <= 0) return "none"; if (d.flat >= d.peak && d.flat >= d.offPeak) return "flat"; return d.peak >= d.offPeak ? "peak" : "off"; }
@@ -154,20 +154,13 @@ window.__ModuleLoader__.load({
 
 			react.useEffect(() => {
 				const frame = findFrame();
-				if (!frame) return;
-				let raf = 0;
-				let last = null;
-				let lastCheck = 0;
-				const tick = (now) => {
-					if (now - lastCheck >= 150) {
-						lastCheck = now;
-						const w = sidebarWidthOf(frame);
-						if (w !== null && w !== last) { last = w; setSidebarW(w); }
-					}
-					raf = requestAnimationFrame(tick);
-				};
-				raf = requestAnimationFrame(tick);
-				return () => cancelAnimationFrame(raf);
+				const col = frame && frame.firstElementChild;
+				if (!col) return;
+				const apply = () => { const w = col.getBoundingClientRect().width; console.log("[dsh-balance] sidebar width:", w); setSidebarW(w); };
+				apply();
+				const ro = new ResizeObserver(apply);
+				ro.observe(col);
+				return () => ro.disconnect();
 			}, []);
 
 			const months = react.useMemo(() => {

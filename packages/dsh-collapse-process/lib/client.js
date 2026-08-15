@@ -3,9 +3,10 @@
  *
  * During streaming nothing changes. Once a turn settles, this plugin folds the
  * turn's process blocks — context injections (system prompt / skill catalog),
- * tool-call rows, command rows, and reasoning-only assistant steps — into a
- * single disclosure row rendered right under that turn's final answer. The
- * answer text itself always stays visible; the fold can be expanded again.
+ * tool-call rows, command rows, and every assistant step except the closing
+ * answer — into a single disclosure row pinned at the TOP of that turn's
+ * process, exactly like DSH's own DisclosureRow (header stays put, content
+ * expands beneath it). The final answer text always stays visible.
  */
 window.__ModuleLoader__.load({
   id: "@lancecheney/dsh-collapse-process",
@@ -14,7 +15,16 @@ window.__ModuleLoader__.load({
 
     const NS = "collapse-process";
     const CONVERSATION_NS = "conversation";
-    const FOLDABLE_KINDS = ["context", "tool-call", "command", "compaction", "manual-compaction"];
+    /** Every chat-node kind this plugin folds (unified wrapper). */
+    const FOLD_KINDS = ["assistant-step", "context", "tool-call", "command", "compaction", "manual-compaction"];
+    /** Kinds that are always process (never the closing answer). */
+    const ALWAYS_PROCESS = {
+      context: true,
+      "tool-call": true,
+      command: true,
+      compaction: true,
+      "manual-compaction": true,
+    };
 
     const zh = {
       "fold.collapsed": "过程已折叠 · 展开",
@@ -67,29 +77,28 @@ window.__ModuleLoader__.load({
       return undefined;
     }
 
-    /** Kinds that are always "process" (never the answer). */
-    const PROCESS_KINDS = {
-      context: true,
-      "tool-call": true,
-      command: true,
-      compaction: true,
-      "manual-compaction": true,
-    };
+    /** Whether a node is process (folds) rather than the closing answer or chrome. */
+    function isProcessNode(node, closingSeq) {
+      if (!node) return false;
+      if (ALWAYS_PROCESS[node.kind]) return true;
+      if (node.kind === "assistant-step") {
+        const finalNode = node.data && node.data.finalNode;
+        if (finalNode && closingSeq !== undefined && finalNode.seq === closingSeq) return false; // the answer
+        return true;
+      }
+      return false;
+    }
 
-    /** Whether the turn owns any process node besides the closing answer. */
-    function turnHasProcess(snap, turn, closingSeq) {
+    /** Whether `myKey` is the FIRST process node of its turn (header anchor). */
+    function isFirstProcessNode(snap, turn, myKey, closingSeq) {
       const chat = snap && snap.chat;
       if (!chat || !chat.order || !chat.nodes) return false;
       for (const key of chat.order) {
         const node = chat.nodes.get(key);
         if (!node) continue;
         if (turnOf(node) !== turn) continue;
-        if (PROCESS_KINDS[node.kind]) return true;
-        if (node.kind === "assistant-step") {
-          const finalNode = node.data && node.data.finalNode;
-          if (finalNode && closingSeq !== undefined && finalNode.seq === closingSeq) continue; // the answer itself
-          return true; // any other assistant step is process
-        }
+        if (!isProcessNode(node, closingSeq)) continue;
+        return key === myKey;
       }
       return false;
     }
@@ -143,61 +152,45 @@ window.__ModuleLoader__.load({
       );
     }
 
-    /** Shadow wrapper for pure-process node kinds: hide when the turn is settled+collapsed. */
-    function makeProcessWrapper(defaultComponent) {
-      return function CollapseProcessWrapper(props) {
-        const { node, useSession, sessionId, useTurnData } = props;
-        react.useSyncExternalStore(collapseStore.subscribe, collapseStore.getVersion);
-        const turn = turnOf(node);
-        const turnDone = useSession((snap) => turn !== undefined && snap.turnEnds.has(turn));
-        const turnTail = useTurnData("turn-tail");
-        if (turn === undefined || !turnDone) return react.createElement(defaultComponent, props);
-        if (!(turnTail && turnTail.closing)) return react.createElement(defaultComponent, props);
-        if (!collapseStore.isCollapsed(sessionId + "#" + turn)) return react.createElement(defaultComponent, props);
-        return null;
-      };
-    }
-
-    /** Shadow wrapper for assistant steps: keep the closing answer visible (+ fold header). */
-    function makeAssistantWrapper(defaultComponent) {
-      return function CollapseAssistantWrapper(props) {
+    /**
+     * One unified shadow wrapper for every folded kind.
+     * - The closing answer: always visible, never folded, never a header anchor.
+     * - The first process node of a settled turn: renders the pinned header
+     *   above its own content (collapsed → header only).
+     * - Every other process node: hidden while collapsed, shown while expanded.
+     * - While the turn is still running (or has no closing answer): unchanged.
+     */
+    function makeFoldWrapper(defaultComponent) {
+      return function CollapseFoldWrapper(props) {
         const { node, useSession, sessionId, useTurnData, foldT } = props;
         react.useSyncExternalStore(collapseStore.subscribe, collapseStore.getVersion);
         const turn = turnOf(node);
-        const turnDone = useSession((snap) => turn !== undefined && snap.turnEnds.has(turn));
         const turnTail = useTurnData("turn-tail");
-
-        const closingNode = turnTail && turnTail.closing ? turnTail.closing.finalNode : undefined;
+        const hasClosing = !!(turnTail && turnTail.closing);
+        const closingSeq = hasClosing ? turnTail.closing.finalNode.seq : undefined;
         const myFinal = node.data && node.data.finalNode;
-        const isClosing = !!(closingNode && myFinal && myFinal.seq === closingNode.seq);
+        const isClosing = !!(myFinal && closingSeq !== undefined && myFinal.seq === closingSeq);
 
-        const hasProcess = useSession((snap) =>
-          turn !== undefined && turnHasProcess(snap, turn, closingNode ? closingNode.seq : undefined),
+        const turnDone = useSession((snap) => turn !== undefined && snap.turnEnds.has(turn));
+        const myKey = node.key;
+        const isFirst = useSession((snap) =>
+          turn !== undefined && snap.turnEnds.has(turn) && isFirstProcessNode(snap, turn, myKey, closingSeq),
         );
 
-        if (isClosing) {
-          const content = react.createElement(defaultComponent, props);
-          if (!turnDone || !hasProcess) return content;
-          return react.createElement(
-            react.Fragment,
-            null,
-            react.createElement(FoldHeader, { turn, sessionId, foldT }),
-            content,
-          );
-        }
+        const key = sessionId + "#" + turn;
+        const collapsed = collapseStore.isCollapsed(key);
 
-        // Any assistant step that is not the closing answer is process: fold it.
-        if (
-          turn !== undefined &&
-          turnDone &&
-          turnTail &&
-          turnTail.closing &&
-          collapseStore.isCollapsed(sessionId + "#" + turn)
-        ) {
-          return null;
-        }
+        if (isClosing) return react.createElement(defaultComponent, props);
+        if (turn === undefined || !turnDone || !hasClosing) return react.createElement(defaultComponent, props);
 
-        return react.createElement(defaultComponent, props);
+        const header = react.createElement(FoldHeader, { turn, sessionId, foldT });
+
+        if (isFirst) {
+          return collapsed
+            ? header
+            : react.createElement(react.Fragment, null, header, react.createElement(defaultComponent, props));
+        }
+        return collapsed ? null : react.createElement(defaultComponent, props);
       };
     }
 
@@ -207,22 +200,7 @@ window.__ModuleLoader__.load({
       ctx.effect(() => ctx.locale.register(NS, { zh, en }), "collapse-process: dictionaries");
       const foldT = ctx.locale.bind(NS);
 
-      ctx.slots.inject("conversation.chat.node", () => {
-        const def = baseComponent(ctx, "assistant-step");
-        if (!def) return () => {};
-        return ctx.slots.register(
-          {
-            name: "conversation.chat.node",
-            key: "assistant-step",
-            priority: -1,
-            locale: CONVERSATION_NS,
-            inject: () => ({ foldT }),
-          },
-          makeAssistantWrapper(def),
-        );
-      });
-
-      for (const kind of FOLDABLE_KINDS) {
+      for (const kind of FOLD_KINDS) {
         ctx.slots.inject("conversation.chat.node", () => {
           const def = baseComponent(ctx, kind);
           if (!def) return () => {};
@@ -234,7 +212,7 @@ window.__ModuleLoader__.load({
               locale: CONVERSATION_NS,
               inject: () => ({ foldT }),
             },
-            makeProcessWrapper(def),
+            makeFoldWrapper(def),
           );
         });
       }
