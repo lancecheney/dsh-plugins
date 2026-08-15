@@ -22,7 +22,6 @@ window.__ModuleLoader__.load({
 			"deepseek-v4-flash": { label: "DeepSeek-V4-Flash" }
 		};
 
-		/** Last-known-good prices (per currency), used only while the host pricing fetch is unavailable. */
 		const FALLBACK_PRICING = {
 			effectiveFrom: "2026-08-17T00:00:00+08:00",
 			currencies: {
@@ -60,7 +59,6 @@ window.__ModuleLoader__.load({
 		};
 		const DEFAULT_MODEL = "deepseek-v4-pro";
 
-		/** Decimal hour in Beijing time (Asia/Shanghai), independent of the user's TZ. */
 		function beijingDecimalHour(now) {
 			let hour = 0;
 			let minute = 0;
@@ -82,7 +80,6 @@ window.__ModuleLoader__.load({
 			return hour + minute / 60;
 		}
 
-		/** legacy (pre effective date) → flat price; otherwise peak/off-peak by Beijing time. */
 		function periodFor(now, effectiveFrom) {
 			const eff = Date.parse(effectiveFrom);
 			if (Number.isFinite(eff) && now.getTime() < eff) return "legacy";
@@ -90,7 +87,6 @@ window.__ModuleLoader__.load({
 			return (h >= 9 && h < 12) || (h >= 14 && h < 18) ? "peak" : "offPeak";
 		}
 
-		/** Prefer the CNY balance row; fall back to the first row. */
 		function firstBalance(data) {
 			const infos = data && data.balance_infos;
 			if (!Array.isArray(infos) || infos.length === 0) return null;
@@ -111,7 +107,6 @@ window.__ModuleLoader__.load({
 			return n.toFixed(2);
 		}
 
-		/** Estimated cost for a session's token-usage projection under one price set. */
 		function costOf(usage, p) {
 			const miss = (usage.uncachedInputTokens ?? 0) + (usage.cacheWriteTokens ?? 0);
 			const hit = usage.cacheReadTokens ?? 0;
@@ -119,10 +114,18 @@ window.__ModuleLoader__.load({
 			return (miss * p.miss + hit * p.hit + output * p.output) / 1e6;
 		}
 
+		function translate(dict, key, params) {
+			let s = dict[key];
+			if (s === void 0) return key;
+			if (params) {
+				for (const [k, v] of Object.entries(params)) s = s.split(`{${k}}`).join(String(v));
+			}
+			return s;
+		}
+
 		const noopSubscribe = () => () => {};
 
 		function BillingBadge(props) {
-			const t = props.t;
 			const useProjection = props.useProjection;
 			const directory = props.directory;
 			const usage = useProjection("tokenUsage");
@@ -162,6 +165,8 @@ window.__ModuleLoader__.load({
 			const effectiveFrom = pricing.effectiveFrom || FALLBACK_PRICING.effectiveFrom;
 			const balanceRow = state.phase === "ok" && state.balance ? firstBalance(state.balance) : null;
 			const currency = balanceRow && balanceRow.currency ? balanceRow.currency : "CNY";
+			const dict = currency === "USD" ? en : zh;
+			const tr = (key, params) => translate(dict, key, params);
 			const pricingSet = (pricing.currencies && pricing.currencies[currency]) || pricing.currencies.CNY || FALLBACK_PRICING.currencies.CNY;
 			const symbol = pricingSet.symbol || "¥";
 			const models = pricingSet.models || FALLBACK_PRICING.currencies.CNY.models;
@@ -182,24 +187,23 @@ window.__ModuleLoader__.load({
 			const outputPrice = fmtPrice(p.output);
 			const cost = usage !== undefined && usage !== null ? costOf(usage, p) : null;
 
-			// off → base price; high (default) → one +; max → two +.
 			const plus = reasoningEffort === "max" ? "++" : reasoningEffort === "off" ? "" : "+";
 
 			const periodClass = isLegacy ? cssModule.legacy : isPeak ? cssModule.peak : cssModule.offPeak;
-			const periodLabel = isLegacy ? t("period.legacy") : isPeak ? t("period.peak") : t("period.offPeak");
+			const periodLabel = isLegacy ? tr("period.legacy") : isPeak ? tr("period.peak") : tr("period.offPeak");
 
 			const tooltipParts = [
-				isLegacy ? t("period.legacyNote") : `${t("period.peak")}: 09:00–12:00, 14:00–18:00 (${t("time.beijing")})`,
-				isLegacy ? "" : `${t("period.offPeak")}: ${t("time.other")}`,
+				isLegacy ? tr("period.legacyNote") : tr("period.peakHours"),
+				isLegacy ? "" : tr("period.offPeakNote"),
 				"",
-				`${t("label.model")}: ${(MODEL_META[modelId] || {}).label || modelId}${reasoningEffort ? ` · ${reasoningEffort}` : ""}`,
-				t("reasoning.note")
+				`${tr("label.model")}: ${(MODEL_META[modelId] || {}).label || modelId}${reasoningEffort ? ` · ${reasoningEffort}` : ""}`,
+				tr("reasoning.note")
 			].filter((line) => line !== "");
 			if (cost !== null && usage) {
 				tooltipParts.push(
 					"",
-					`${t("label.spent")}: ${symbol}${fmtMoney(cost)} (${t("cost.estimate")})`,
-					t("cost.breakdown", {
+					`${tr("label.spent")}: ${symbol}${fmtMoney(cost)} (${tr("cost.estimate")})`,
+					tr("cost.breakdown", {
 						miss: (usage.uncachedInputTokens ?? 0) + (usage.cacheWriteTokens ?? 0),
 						hit: usage.cacheReadTokens ?? 0,
 						output: usage.outputTokens ?? 0
@@ -209,11 +213,11 @@ window.__ModuleLoader__.load({
 			tooltipParts.push("");
 			for (const [id, info] of Object.entries(models)) {
 				const meta = MODEL_META[id] || {};
-				const row = t("price.row", { sym: symbol, hit: fmtPrice(info.peak.hit), miss: fmtPrice(info.peak.miss), output: fmtPrice(info.peak.output) });
-				const off = t("price.row", { sym: symbol, hit: fmtPrice(info.offPeak.hit), miss: fmtPrice(info.offPeak.miss), output: fmtPrice(info.offPeak.output) });
-				const legacy = info.legacy ? t("price.row", { sym: symbol, hit: fmtPrice(info.legacy.hit), miss: fmtPrice(info.legacy.miss), output: fmtPrice(info.legacy.output) }) : null;
+				const row = tr("price.row", { sym: symbol, hit: fmtPrice(info.peak.hit), miss: fmtPrice(info.peak.miss), output: fmtPrice(info.peak.output) });
+				const off = tr("price.row", { sym: symbol, hit: fmtPrice(info.offPeak.hit), miss: fmtPrice(info.offPeak.miss), output: fmtPrice(info.offPeak.output) });
+				const legacy = info.legacy ? tr("price.row", { sym: symbol, hit: fmtPrice(info.legacy.hit), miss: fmtPrice(info.legacy.miss), output: fmtPrice(info.legacy.output) }) : null;
 				tooltipParts.push(
-					`${meta.label || id} — ${t("period.peak")}: ${row} / ${t("period.offPeak")}: ${off}${legacy ? ` / ${t("period.legacy")}: ${legacy}` : ""}`
+					`${meta.label || id} — ${tr("period.peak")}: ${row} / ${tr("period.offPeak")}: ${off}${legacy ? ` / ${tr("period.legacy")}: ${legacy}` : ""}`
 				);
 			}
 			const tooltip = tooltipParts.join("\n");
@@ -222,20 +226,20 @@ window.__ModuleLoader__.load({
 
 			const segs = [];
 			segs.push(react.createElement("span", { key: "spent" },
-				t("label.spent"), " ",
+				tr("label.spent"), " ",
 				react.createElement("span", { className: cssModule.num }, cost === null ? "—" : `${symbol}${fmtMoney(cost)}`)));
 			segs.push(sep("sep1"));
 			segs.push(react.createElement("span", { key: "balance" },
-				t("label.balance"), " ",
+				tr("label.balance"), " ",
 				react.createElement("span", { className: cssModule.num },
-					balanceRow !== null ? `${symbol}${fmtMoney(Number(balanceRow.total_balance))}` : (state.phase === "loading" ? "…" : t("balance.unavailable")))));
+					balanceRow !== null ? `${symbol}${fmtMoney(Number(balanceRow.total_balance))}` : (state.phase === "loading" ? "…" : tr("balance.unavailable")))));
 			segs.push(sep("sep2"));
 			segs.push(react.createElement("span", { key: "period", className: `${cssModule.chip} ${periodClass}` }, periodLabel));
 			segs.push(sep("sep3"));
 			segs.push(react.createElement("span", { key: "price" },
 				`${symbol}${outputPrice}`,
 				plus !== "" ? react.createElement("span", { className: cssModule.plus }, plus) : null,
-				t("price.suffix")));
+				tr("price.suffix")));
 
 			return react.createElement("span", { className: cssModule.root, title: tooltip }, segs);
 		}
@@ -249,14 +253,14 @@ window.__ModuleLoader__.load({
 			"period.offPeak": "空闲",
 			"period.legacy": "平价",
 			"period.legacyNote": "当前为调价前平价（8/17 前）",
-			"time.beijing": "北京时间",
-			"time.other": "其余时段",
+			"period.peakHours": "高峰：09:00–12:00、14:00–18:00（北京时间）",
+			"period.offPeakNote": "空闲：其余时段",
 			"balance.unavailable": "余额不可用",
 			"price.suffix": "/M 输出",
 			"price.row": "命中{sym}{hit}/未命中{sym}{miss}/输出{sym}{output}",
 			"cost.estimate": "按当前时段价格估算",
 			"cost.breakdown": "输入(未命中) {miss} · 输入(命中) {hit} · 输出 {output} tokens",
-			"reasoning.note": "思考链按输出 token 计费；价格段 + / ++ 表示 high / max 思考会额外增加输出量"
+			"reasoning.note": "思考链按输出 token 计费；+ / ++ 表示 high / max 思考会额外增加输出量"
 		};
 		const en = {
 			"label.spent": "Spent",
@@ -266,8 +270,8 @@ window.__ModuleLoader__.load({
 			"period.offPeak": "Off-peak",
 			"period.legacy": "Flat",
 			"period.legacyNote": "Pre-change flat pricing (before Aug 17)",
-			"time.beijing": "Beijing time",
-			"time.other": "all other hours",
+			"period.peakHours": "Peak: 01:00–04:00, 06:00–10:00 UTC",
+			"period.offPeakNote": "Off-peak: all other hours",
 			"balance.unavailable": "balance unavailable",
 			"price.suffix": "/M output",
 			"price.row": "hit {sym}{hit}/miss {sym}{miss}/output {sym}{output}",
@@ -283,7 +287,6 @@ window.__ModuleLoader__.load({
 				name: "conversation.session.header.utilities",
 				id: "deepseek-balance",
 				order: -100,
-				locale: NS,
 				inject: (sessionId) => {
 					const models = ctx.get("modelDirectories");
 					let directory;
