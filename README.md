@@ -1,5 +1,7 @@
 # dsh-plugins
 
+[![awesome · DSH plugin](https://beancookie.github.io/awesome-dsh-plugin/badge.svg)](https://beancookie.github.io/awesome-dsh-plugin)
+
 A monorepo of [DeepSeek Harness](https://github.com/deepseek-ai/deepseek-harness) plugins. / DeepSeek Harness 插件集合（monorepo）。
 
 ## Plugins / 插件
