@@ -22,19 +22,39 @@ window.__ModuleLoader__.load({
 			"deepseek-v4-flash": { label: "DeepSeek-V4-Flash" }
 		};
 
-		/** Last-known-good prices, used only while the host pricing fetch is unavailable. */
+		/** Last-known-good prices (per currency), used only while the host pricing fetch is unavailable. */
 		const FALLBACK_PRICING = {
 			effectiveFrom: "2026-08-17T00:00:00+08:00",
-			models: {
-				"deepseek-v4-pro": {
-					legacy: { hit: 0.025, miss: 3.0, output: 6.0 },
-					peak: { hit: 0.30, miss: 9.0, output: 27.0 },
-					offPeak: { hit: 0.15, miss: 4.5, output: 13.5 }
+			currencies: {
+				CNY: {
+					symbol: "¥",
+					models: {
+						"deepseek-v4-pro": {
+							legacy: { hit: 0.025, miss: 3.0, output: 6.0 },
+							peak: { hit: 0.30, miss: 9.0, output: 27.0 },
+							offPeak: { hit: 0.15, miss: 4.5, output: 13.5 }
+						},
+						"deepseek-v4-flash": {
+							legacy: { hit: 0.02, miss: 1.0, output: 2.0 },
+							peak: { hit: 0.10, miss: 3.0, output: 9.0 },
+							offPeak: { hit: 0.05, miss: 1.5, output: 4.5 }
+						}
+					}
 				},
-				"deepseek-v4-flash": {
-					legacy: { hit: 0.02, miss: 1.0, output: 2.0 },
-					peak: { hit: 0.10, miss: 3.0, output: 9.0 },
-					offPeak: { hit: 0.05, miss: 1.5, output: 4.5 }
+				USD: {
+					symbol: "$",
+					models: {
+						"deepseek-v4-pro": {
+							legacy: { hit: 0.003625, miss: 0.435, output: 0.87 },
+							peak: { hit: 0.044, miss: 1.32, output: 3.96 },
+							offPeak: { hit: 0.022, miss: 0.66, output: 1.98 }
+						},
+						"deepseek-v4-flash": {
+							legacy: { hit: 0.0028, miss: 0.14, output: 0.28 },
+							peak: { hit: 0.014, miss: 0.44, output: 1.32 },
+							offPeak: { hit: 0.007, miss: 0.22, output: 0.66 }
+						}
+					}
 				}
 			}
 		};
@@ -82,7 +102,7 @@ window.__ModuleLoader__.load({
 			return Number.isFinite(n) ? String(n) : String(value);
 		}
 
-		function fmtYuan(value) {
+		function fmtMoney(value) {
 			const n = Number(value);
 			if (!Number.isFinite(n)) return "—";
 			if (n <= 0) return "0.00";
@@ -91,7 +111,7 @@ window.__ModuleLoader__.load({
 			return n.toFixed(2);
 		}
 
-		/** Estimated cost (CNY) for a session's token-usage projection under one price set. */
+		/** Estimated cost for a session's token-usage projection under one price set. */
 		function costOf(usage, p) {
 			const miss = (usage.uncachedInputTokens ?? 0) + (usage.cacheWriteTokens ?? 0);
 			const hit = usage.cacheReadTokens ?? 0;
@@ -124,7 +144,7 @@ window.__ModuleLoader__.load({
 							phase: "ok",
 							balance: balanceRes.ok ? balanceData : null,
 							balanceError: balanceRes.ok ? null : (balanceData.error || `HTTP ${balanceRes.status}`),
-							pricing: pricingData && pricingRes.ok && pricingData.models ? pricingData : FALLBACK_PRICING
+							pricing: pricingData && pricingRes.ok && pricingData.currencies ? pricingData : FALLBACK_PRICING
 						});
 					} catch (error) {
 						if (alive) setState({ phase: "error", message: error instanceof Error ? error.message : String(error) });
@@ -140,6 +160,11 @@ window.__ModuleLoader__.load({
 
 			const pricing = state.pricing || FALLBACK_PRICING;
 			const effectiveFrom = pricing.effectiveFrom || FALLBACK_PRICING.effectiveFrom;
+			const balanceRow = state.phase === "ok" && state.balance ? firstBalance(state.balance) : null;
+			const currency = balanceRow && balanceRow.currency ? balanceRow.currency : "CNY";
+			const pricingSet = (pricing.currencies && pricing.currencies[currency]) || pricing.currencies.CNY || FALLBACK_PRICING.currencies.CNY;
+			const symbol = pricingSet.symbol || "¥";
+			const models = pricingSet.models || FALLBACK_PRICING.currencies.CNY.models;
 
 			const modelState = react.useSyncExternalStore(
 				directory ? (fn) => directory.subscribe(fn) : noopSubscribe,
@@ -152,10 +177,9 @@ window.__ModuleLoader__.load({
 			const period = periodFor(new Date(), effectiveFrom);
 			const isPeak = period === "peak";
 			const isLegacy = period === "legacy";
-			const model = (pricing.models && pricing.models[modelId]) || pricing.models[DEFAULT_MODEL] || FALLBACK_PRICING.models[DEFAULT_MODEL];
+			const model = models[modelId] || models[DEFAULT_MODEL] || FALLBACK_PRICING.currencies.CNY.models[DEFAULT_MODEL];
 			const p = (period === "peak" ? model.peak : period === "offPeak" ? model.offPeak : model.legacy) || model.peak;
 			const outputPrice = fmtPrice(p.output);
-			const balance = state.phase === "ok" && state.balance ? firstBalance(state.balance) : null;
 			const cost = usage !== undefined && usage !== null ? costOf(usage, p) : null;
 
 			// off → base price; high (default) → one +; max → two +.
@@ -174,7 +198,7 @@ window.__ModuleLoader__.load({
 			if (cost !== null && usage) {
 				tooltipParts.push(
 					"",
-					`${t("label.spent")}: ¥${fmtYuan(cost)} (${t("cost.estimate")})`,
+					`${t("label.spent")}: ${symbol}${fmtMoney(cost)} (${t("cost.estimate")})`,
 					t("cost.breakdown", {
 						miss: (usage.uncachedInputTokens ?? 0) + (usage.cacheWriteTokens ?? 0),
 						hit: usage.cacheReadTokens ?? 0,
@@ -183,11 +207,11 @@ window.__ModuleLoader__.load({
 				);
 			}
 			tooltipParts.push("");
-			for (const [id, info] of Object.entries(pricing.models)) {
+			for (const [id, info] of Object.entries(models)) {
 				const meta = MODEL_META[id] || {};
-				const row = t("price.row", { hit: fmtPrice(info.peak.hit), miss: fmtPrice(info.peak.miss), output: fmtPrice(info.peak.output) });
-				const off = t("price.row", { hit: fmtPrice(info.offPeak.hit), miss: fmtPrice(info.offPeak.miss), output: fmtPrice(info.offPeak.output) });
-				const legacy = info.legacy ? t("price.row", { hit: fmtPrice(info.legacy.hit), miss: fmtPrice(info.legacy.miss), output: fmtPrice(info.legacy.output) }) : null;
+				const row = t("price.row", { sym: symbol, hit: fmtPrice(info.peak.hit), miss: fmtPrice(info.peak.miss), output: fmtPrice(info.peak.output) });
+				const off = t("price.row", { sym: symbol, hit: fmtPrice(info.offPeak.hit), miss: fmtPrice(info.offPeak.miss), output: fmtPrice(info.offPeak.output) });
+				const legacy = info.legacy ? t("price.row", { sym: symbol, hit: fmtPrice(info.legacy.hit), miss: fmtPrice(info.legacy.miss), output: fmtPrice(info.legacy.output) }) : null;
 				tooltipParts.push(
 					`${meta.label || id} — ${t("period.peak")}: ${row} / ${t("period.offPeak")}: ${off}${legacy ? ` / ${t("period.legacy")}: ${legacy}` : ""}`
 				);
@@ -199,17 +223,17 @@ window.__ModuleLoader__.load({
 			const segs = [];
 			segs.push(react.createElement("span", { key: "spent" },
 				t("label.spent"), " ",
-				react.createElement("span", { className: cssModule.num }, cost === null ? "—" : `¥${fmtYuan(cost)}`)));
+				react.createElement("span", { className: cssModule.num }, cost === null ? "—" : `${symbol}${fmtMoney(cost)}`)));
 			segs.push(sep("sep1"));
 			segs.push(react.createElement("span", { key: "balance" },
 				t("label.balance"), " ",
 				react.createElement("span", { className: cssModule.num },
-					balance !== null ? `¥${fmtYuan(Number(balance.total_balance))}` : (state.phase === "loading" ? "…" : t("balance.unavailable")))));
+					balanceRow !== null ? `${symbol}${fmtMoney(Number(balanceRow.total_balance))}` : (state.phase === "loading" ? "…" : t("balance.unavailable")))));
 			segs.push(sep("sep2"));
 			segs.push(react.createElement("span", { key: "period", className: `${cssModule.chip} ${periodClass}` }, periodLabel));
 			segs.push(sep("sep3"));
 			segs.push(react.createElement("span", { key: "price" },
-				`¥${outputPrice}`,
+				`${symbol}${outputPrice}`,
 				plus !== "" ? react.createElement("span", { className: cssModule.plus }, plus) : null,
 				t("price.suffix")));
 
@@ -229,7 +253,7 @@ window.__ModuleLoader__.load({
 			"time.other": "其余时段",
 			"balance.unavailable": "余额不可用",
 			"price.suffix": "/M 输出",
-			"price.row": "命中¥{hit}/未命中¥{miss}/输出¥{output}",
+			"price.row": "命中{sym}{hit}/未命中{sym}{miss}/输出{sym}{output}",
 			"cost.estimate": "按当前时段价格估算",
 			"cost.breakdown": "输入(未命中) {miss} · 输入(命中) {hit} · 输出 {output} tokens",
 			"reasoning.note": "思考链按输出 token 计费；价格段 + / ++ 表示 high / max 思考会额外增加输出量"
@@ -246,7 +270,7 @@ window.__ModuleLoader__.load({
 			"time.other": "all other hours",
 			"balance.unavailable": "balance unavailable",
 			"price.suffix": "/M output",
-			"price.row": "hit ¥{hit}/miss ¥{miss}/output ¥{output}",
+			"price.row": "hit {sym}{hit}/miss {sym}{miss}/output {sym}{output}",
 			"cost.estimate": "estimated at the current period's price",
 			"cost.breakdown": "input(miss) {miss} · input(hit) {hit} · output {output} tokens",
 			"reasoning.note": "Reasoning tokens are billed as output; + / ++ mark high / max effort which adds extra output"
