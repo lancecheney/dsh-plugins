@@ -156,7 +156,7 @@ window.__ModuleLoader__.load({
 				const frame = findFrame();
 				const col = frame && frame.firstElementChild;
 				if (!col) return;
-				const apply = () => { const w = col.getBoundingClientRect().width; console.log("[dsh-balance] sidebar width:", w); setSidebarW(w); };
+				const apply = () => { const w = col.getBoundingClientRect().width; setSidebarW(w); };
 				apply();
 				const ro = new ResizeObserver(apply);
 				ro.observe(col);
