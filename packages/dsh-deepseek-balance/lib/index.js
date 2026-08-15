@@ -155,8 +155,8 @@ function parseCnPricing(html) {
 	const lm = text.match(/百万tokens输入（缓存命中）\s*([\d.]+)元\s*([\d.]+)元\s*百万tokens输入（缓存未命中）\s*([\d.]+)元\s*([\d.]+)元\s*百万tokens输出\s*([\d.]+)元\s*([\d.]+)元/);
 	if (lm) {
 		legacy = {
-			"deepseek-v4-flash": { hit: number(lm, 1), miss: number(lm, 3), output: number(lm, 5) },
-			"deepseek-v4-pro": { hit: number(lm, 2), miss: number(lm, 4), output: number(lm, 6) }
+			flash: { hit: number(lm, 1), miss: number(lm, 3), output: number(lm, 5) },
+			pro: { hit: number(lm, 2), miss: number(lm, 4), output: number(lm, 6) }
 		};
 	}
 
@@ -189,8 +189,8 @@ function parseUsModels(html) {
 	const lm = text.match(/1M INPUT TOKENS \(CACHE HIT\)\s+\$([\d.]+)\s+\$([\d.]+)\s+1M INPUT TOKENS \(CACHE MISS\)\s+\$([\d.]+)\s+\$([\d.]+)\s+1M OUTPUT TOKENS\s+\$([\d.]+)\s+\$([\d.]+)/i);
 	if (lm) {
 		legacy = {
-			"deepseek-v4-flash": { hit: number(lm, 1), miss: number(lm, 3), output: number(lm, 5) },
-			"deepseek-v4-pro": { hit: number(lm, 2), miss: number(lm, 4), output: number(lm, 6) }
+			flash: { hit: number(lm, 1), miss: number(lm, 3), output: number(lm, 5) },
+			pro: { hit: number(lm, 2), miss: number(lm, 4), output: number(lm, 6) }
 		};
 	}
 
