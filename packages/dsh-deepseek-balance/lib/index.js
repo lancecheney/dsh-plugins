@@ -1,6 +1,10 @@
 import { credentialRef } from "@deepseek-ai/dsh-credentials";
 import { settingsNamespace } from "@deepseek-ai/dsh-settings";
 import { z } from "zod";
+import { existsSync, readFileSync, readdirSync } from "node:fs";
+import { homedir } from "node:os";
+import { join } from "node:path";
+import { zstdDecompressSync } from "node:zlib";
 
 /**
  * @lancecheney/dsh-deepseek-balance — host half.
@@ -353,6 +357,218 @@ const tokenUsageByPeriodProjection = {
 	stateVersion: 1
 };
 
+
+const ZSTD_MAGIC = 4247762216;
+
+function scanZstdFrames(buffer) {
+	const frames = [];
+	let offset = 0;
+	while (offset < buffer.length) {
+		const start = offset;
+		if (buffer.length - offset < 4) break;
+		if (buffer.readUInt32LE(offset) !== ZSTD_MAGIC) break;
+		offset += 4;
+		const descriptor = buffer.readUInt8(offset);
+		offset += 1;
+		const contentSizeFlag = descriptor >>> 6;
+		const singleSegment = (descriptor & 32) !== 0;
+		const checksum = (descriptor & 4) !== 0;
+		const dictionaryFlag = descriptor & 3;
+		const dictionaryBytes = dictionaryFlag === 3 ? 4 : dictionaryFlag;
+		const contentSizeBytes = contentSizeFlag === 0 ? (singleSegment ? 1 : 0) : (1 << contentSizeFlag);
+		offset += (singleSegment ? 0 : 1) + dictionaryBytes + contentSizeBytes;
+		for (;;) {
+			const blockHeader = buffer.readUIntLE(offset, 3);
+			offset += 3;
+			const lastBlock = (blockHeader & 1) !== 0;
+			const blockType = (blockHeader >>> 1) & 3;
+			const blockSize = blockHeader >>> 3;
+			offset += blockType === 1 ? 1 : blockSize;
+			if (lastBlock) break;
+		}
+		if (checksum) offset += 4;
+		frames.push({ start, end: offset });
+	}
+	return frames;
+}
+
+function dshHome() {
+	return process.env.DSH_HOME || join(homedir(), ".dsh");
+}
+
+function beijingDayKey(ms) {
+	return new Date(ms + 8 * 3600 * 1000).toISOString().slice(0, 10);
+}
+
+function periodOfUsage(time, effectiveFromMs) {
+	if (time < effectiveFromMs) return "flat";
+	const hour = new Date(time + 8 * 3600 * 1000).getUTCHours();
+	return (hour >= 9 && hour < 12) || (hour >= 14 && hour < 18) ? "peak" : "offPeak";
+}
+
+function readSessionRecords(path) {
+	const buf = readFileSync(path);
+	let text;
+	if (path.endsWith(".zstd")) {
+		const parts = [];
+		for (const frame of scanZstdFrames(buf)) parts.push(zstdDecompressSync(buf.subarray(frame.start, frame.end)).toString("utf8"));
+		text = parts.join("");
+	} else {
+		text = buf.toString("utf8");
+	}
+	const records = [];
+	for (const line of text.split("\n")) {
+		const t = line.trim();
+		if (t === "") continue;
+		try { records.push(JSON.parse(t)); } catch {}
+	}
+	return records;
+}
+
+function aggregateSessions() {
+	const root = join(dshHome(), "sessions");
+	const summary = {
+		totalTokens: 0,
+		peakTokens: 0,
+		offPeakTokens: 0,
+		flatTokens: 0,
+		dailyPeakTokens: 0,
+		longestChatMs: 0,
+		currentStreak: 0,
+		longestStreak: 0,
+		days: {},
+		sessions: [],
+		modelEffort: {}
+	};
+	if (!existsSync(root)) return summary;
+	const effectiveFromMs = Date.parse(pricing.data.effectiveFrom || FALLBACK_PRICING.effectiveFrom);
+	if (!Number.isFinite(effectiveFromMs)) return summary;
+
+	let wsDirs = [];
+	try { wsDirs = readdirSync(root); } catch { return summary; }
+	for (const wsDir of wsDirs) {
+		const wsPath = join(root, wsDir);
+		let sDirs = [];
+		try { sDirs = readdirSync(wsPath); } catch { continue; }
+		for (const sDir of sDirs) {
+			const sPath = join(wsPath, sDir);
+			const zstd = join(sPath, "session.jsonl.zstd");
+			const plain = join(sPath, "session.jsonl");
+			const path = existsSync(zstd) ? zstd : existsSync(plain) ? plain : null;
+			if (path === null) continue;
+			let records;
+			try { records = readSessionRecords(path); } catch { continue; }
+			let header = null;
+			let title = null;
+			let model = null;
+			let effort = null;
+			let firstTime = null;
+			let lastTime = null;
+			let tokens = 0;
+			let peakTokens = 0;
+			let offPeakTokens = 0;
+			let flatTokens = 0;
+			const dayTokens = {};
+			for (const r of records) {
+				if (r.type === "session" && header === null) { header = r; continue; }
+				if (r.type === "session/title" && title === null) title = r.data?.title ?? null;
+				if (r.type === "request/header" && model === null) {
+					model = r.data?.header?.config?.model ?? null;
+					effort = r.data?.header?.config?.reasoningEffort ?? null;
+				}
+				const time = typeof r.time === "number" ? r.time : null;
+				if (time !== null) {
+					if (firstTime === null || time < firstTime) firstTime = time;
+					if (lastTime === null || time > lastTime) lastTime = time;
+				}
+				let usage = null;
+				if (r.type === "assistant/message" && r.data?.usage) usage = r.data.usage;
+				else if (r.type === "assistant/chunk" && r.data?.chunk?.type === "usage") usage = r.data.chunk.usage;
+				if (usage && time !== null) {
+					const t = (usage.inputTokens ?? 0) + (usage.outputTokens ?? 0) + (usage.cacheReadTokens ?? 0);
+					const period = periodOfUsage(time, effectiveFromMs);
+					const dayKey = beijingDayKey(time);
+					tokens += t;
+					if (period === "peak") peakTokens += t;
+					else if (period === "offPeak") offPeakTokens += t;
+					else flatTokens += t;
+					dayTokens[dayKey] = dayTokens[dayKey] || { peak: 0, offPeak: 0, flat: 0 };
+					dayTokens[dayKey][period] += t;
+				}
+			}
+			summary.totalTokens += tokens;
+			summary.peakTokens += peakTokens;
+			summary.offPeakTokens += offPeakTokens;
+			summary.flatTokens += flatTokens;
+			for (const [dayKey, d] of Object.entries(dayTokens)) {
+				summary.days[dayKey] = summary.days[dayKey] || { tokens: 0, peak: 0, offPeak: 0, flat: 0 };
+				const dayTotal = d.peak + d.offPeak + d.flat;
+				summary.days[dayKey].tokens += dayTotal;
+				summary.days[dayKey].peak += d.peak;
+				summary.days[dayKey].offPeak += d.offPeak;
+				summary.days[dayKey].flat += d.flat;
+				if (summary.days[dayKey].tokens > summary.dailyPeakTokens) summary.dailyPeakTokens = summary.days[dayKey].tokens;
+			}
+			const duration = (lastTime ?? 0) - (firstTime ?? 0);
+			if (duration > summary.longestChatMs) summary.longestChatMs = duration;
+			if (model !== null) {
+				const key = `${model}|${effort ?? ""}`;
+				summary.modelEffort[key] = summary.modelEffort[key] || { tokens: 0 };
+				summary.modelEffort[key].tokens += tokens;
+			}
+			summary.sessions.push({
+				id: header?.id ?? sDir.replace(/^session-/, ""),
+				title: title ?? header?.id ?? sDir,
+				cwd: header?.cwd ?? wsDir,
+				tokens,
+				peakTokens,
+				createdAt: header?.createdAt ?? firstTime,
+				endedAt: lastTime
+			});
+		}
+	}
+
+	summary.sessions.sort((a, b) => b.tokens - a.tokens);
+
+	const dayKeys = Object.keys(summary.days).sort();
+	let longest = 0;
+	let run = 0;
+	let prev = null;
+	for (const d of dayKeys) {
+		if (prev === null) run = 1;
+		else {
+			const diff = Math.round((Date.parse(d) - Date.parse(prev)) / 86400000);
+			run = diff === 1 ? run + 1 : 1;
+		}
+		if (run > longest) longest = run;
+		prev = d;
+	}
+	summary.longestStreak = longest;
+
+	const daySet = new Set(dayKeys);
+	let cur = 0;
+	let cursor = Date.parse(beijingDayKey(Date.now()));
+	while (daySet.has(beijingDayKey(cursor))) {
+		cur++;
+		cursor -= 86400000;
+	}
+	summary.currentStreak = cur;
+
+	return summary;
+}
+
+const usageCache = { data: null, at: 0 };
+const USAGE_CACHE_TTL_MS = 60000;
+
+async function maskApiKey(ctx) {
+	try {
+		const { apiKey } = await resolveDeepSeekFacts(ctx);
+		return `${apiKey.slice(0, 4)}****`;
+	} catch {
+		return null;
+	}
+}
+
 function apply(ctx) {
 	ctx.inject(["sessionProjections"], (projectionCtx) => {
 		projectionCtx.sessionProjections.register(tokenUsageByPeriodProjection);
@@ -412,6 +628,35 @@ function apply(ctx) {
 
 	ctx.effect(() => ctx.webServer.register({ kind: "exact", path: "/api/deepseek-balance", handler: balanceHandler }), "deepseek-balance: /api/deepseek-balance route");
 	ctx.effect(() => ctx.webServer.register({ kind: "exact", path: "/api/deepseek-pricing", handler: pricingHandler }), "deepseek-balance: /api/deepseek-pricing route");
+
+	const usageHandler = async (req, res) => {
+		if (req.method !== "GET" && req.method !== "HEAD") {
+			json(res, 405, { error: "method not allowed" });
+			return;
+		}
+		if (!isTrustedRead(req)) {
+			json(res, 403, { error: "forbidden" });
+			return;
+		}
+		if (usageCache.at === 0 || Date.now() - usageCache.at > USAGE_CACHE_TTL_MS) {
+			try {
+				usageCache.data = aggregateSessions();
+				usageCache.at = Date.now();
+			} catch (error) {
+				if (ctx?.logger?.warn) ctx.logger.warn(`deepseek-balance: usage aggregation failed: ${error instanceof Error ? error.message : String(error)}`);
+			}
+		}
+		const key = await maskApiKey(ctx);
+		json(res, 200, {
+			...(usageCache.data || aggregateSessions()),
+			apiKeyPreview: key,
+			effectiveFrom: pricing.data.effectiveFrom,
+			fetchedAt: usageCache.at,
+			source: pricing.source
+		});
+	};
+
+	ctx.effect(() => ctx.webServer.register({ kind: "exact", path: "/api/deepseek-usage", handler: usageHandler }), "deepseek-balance: /api/deepseek-usage route");
 
 	ctx.effect(() => {
 		refreshPricing(ctx).catch(() => {});
