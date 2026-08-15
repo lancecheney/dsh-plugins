@@ -20,16 +20,18 @@ window.__ModuleLoader__.load({
 		/**
 		 * DeepSeek API peak/off-peak pricing (effective 2026-08-17, Beijing time).
 		 * Peak: 09:00-12:00 and 14:00-18:00; everything else is off-peak.
-		 * Values are CNY per 1M tokens.
+		 * Values are CNY per 1M tokens. Reasoning tokens are billed as output.
 		 */
 		const MODELS = {
 			"deepseek-v4-pro": {
 				label: "DeepSeek-V4-Pro",
+				short: "Pro",
 				peak: { hit: 0.30, miss: 9.0, output: 27.0 },
 				offPeak: { hit: 0.15, miss: 4.5, output: 13.5 }
 			},
 			"deepseek-v4-flash": {
 				label: "DeepSeek-V4-Flash",
+				short: "Flash",
 				peak: { hit: 0.10, miss: 3.0, output: 9.0 },
 				offPeak: { hit: 0.05, miss: 1.5, output: 4.5 }
 			}
@@ -93,9 +95,12 @@ window.__ModuleLoader__.load({
 			return (miss * p.miss + hit * p.hit + output * p.output) / 1e6;
 		}
 
+		const noopSubscribe = () => () => {};
+
 		function BillingBadge(props) {
 			const t = props.t;
 			const useProjection = props.useProjection;
+			const directory = props.directory;
 			const usage = useProjection("tokenUsage");
 			const [state, setState] = react.useState({ phase: "loading" });
 
@@ -127,9 +132,17 @@ window.__ModuleLoader__.load({
 				};
 			}, []);
 
+			const modelState = react.useSyncExternalStore(
+				directory ? (fn) => directory.subscribe(fn) : noopSubscribe,
+				() => (directory ? directory.getSnapshot() : null)
+			);
+			const currentSelection = modelState && modelState.current ? modelState.current : null;
+			const modelId = currentSelection && currentSelection.model ? currentSelection.model : DEFAULT_MODEL;
+			const reasoningEffort = currentSelection ? currentSelection.reasoningEffort : void 0;
+
 			const period = periodFor(new Date());
 			const isPeak = period === "peak";
-			const model = MODELS[DEFAULT_MODEL];
+			const model = MODELS[modelId] || MODELS[DEFAULT_MODEL];
 			const p = model[period];
 			const outputPrice = fmtPrice(p.output);
 			const balance = state.phase === "ok" ? firstBalance(state.data) : null;
@@ -137,7 +150,10 @@ window.__ModuleLoader__.load({
 
 			const tooltipParts = [
 				`${t("period.peak")}: 09:00–12:00, 14:00–18:00 (${t("time.beijing")})`,
-				`${t("period.offPeak")}: ${t("time.other")}`
+				`${t("period.offPeak")}: ${t("time.other")}`,
+				"",
+				`${t("label.model")}: ${model.label}${reasoningEffort ? ` · ${reasoningEffort}` : ""}`,
+				t("reasoning.note")
 			];
 			if (cost !== null && usage) {
 				tooltipParts.push(
@@ -173,7 +189,7 @@ window.__ModuleLoader__.load({
 			segs.push(react.createElement("span", { key: "period", className: `${cssModule.chip} ${isPeak ? cssModule.peak : cssModule.offPeak}` },
 				isPeak ? t("period.peak") : t("period.offPeak")));
 			segs.push(sep("sep3"));
-			segs.push(react.createElement("span", { key: "price" }, t("price.outputPerM", { price: outputPrice })));
+			segs.push(react.createElement("span", { key: "price" }, t("price.outputPerM", { model: model.short, price: outputPrice })));
 
 			return react.createElement("span", { className: cssModule.root, title: tooltip }, segs);
 		}
@@ -182,28 +198,32 @@ window.__ModuleLoader__.load({
 		const zh = {
 			"label.spent": "消耗",
 			"label.balance": "余额",
+			"label.model": "模型",
 			"period.peak": "高峰",
 			"period.offPeak": "空闲",
 			"time.beijing": "北京时间",
 			"time.other": "其余时段",
 			"balance.unavailable": "余额不可用",
-			"price.outputPerM": "¥{price}/M 输出",
+			"price.outputPerM": "{model} ¥{price}/M 输出",
 			"price.row": "命中¥{hit}/未命中¥{miss}/输出¥{output}",
 			"cost.estimate": "按当前时段价格估算",
-			"cost.breakdown": "输入(未命中) {miss} · 输入(命中) {hit} · 输出 {output} tokens"
+			"cost.breakdown": "输入(未命中) {miss} · 输入(命中) {hit} · 输出 {output} tokens",
+			"reasoning.note": "思考链(reasoning)按输出 token 计费，high/max 只增加输出量、不改变单价"
 		};
 		const en = {
 			"label.spent": "Spent",
 			"label.balance": "Balance",
+			"label.model": "Model",
 			"period.peak": "Peak",
 			"period.offPeak": "Off-peak",
 			"time.beijing": "Beijing time",
 			"time.other": "all other hours",
 			"balance.unavailable": "balance unavailable",
-			"price.outputPerM": "¥{price}/M output",
+			"price.outputPerM": "{model} ¥{price}/M output",
 			"price.row": "hit ¥{hit}/miss ¥{miss}/output ¥{output}",
 			"cost.estimate": "estimated at the current period's price",
-			"cost.breakdown": "input(miss) {miss} · input(hit) {hit} · output {output} tokens"
+			"cost.breakdown": "input(miss) {miss} · input(hit) {hit} · output {output} tokens",
+			"reasoning.note": "Reasoning tokens are billed as output; high/max only increases output volume, not the unit price"
 		};
 
 		const inject = ["slots", "locale"];
@@ -213,7 +233,17 @@ window.__ModuleLoader__.load({
 				name: "conversation.session.header.utilities",
 				id: "deepseek-balance",
 				order: -100,
-				locale: NS
+				locale: NS,
+				inject: (sessionId) => {
+					const models = ctx.get("modelDirectories");
+					let directory;
+					if (models && typeof models.directoryFor === "function") {
+						try {
+							directory = models.directoryFor(sessionId);
+						} catch {}
+					}
+					return { directory: directory ? directory.store : void 0 };
+				}
 			}, BillingBadge));
 		}
 
