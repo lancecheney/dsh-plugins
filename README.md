@@ -8,6 +8,16 @@ A monorepo of [DeepSeek Harness](https://github.com/deepseek-ai/deepseek-harness
 |---|---|---|
 | [`dsh-deepseek-balance`](packages/dsh-deepseek-balance) | Session-header DeepSeek API balance + per-conversation spend + peak/off-peak pricing indicator / 会话头部显示余额、消耗、峰谷价格 | [EN](packages/dsh-deepseek-balance/README.md) · [中文](packages/dsh-deepseek-balance/README.zh.md) |
 
+## Screenshot / 截图
+
+`dsh-deepseek-balance` 在 **Session log** 左侧显示余额 / 消耗 / 峰谷价格徽章：
+
+![badge](https://github.com/lancecheney/dsh-plugins/raw/main/docs/screenshot.png)
+
+点开徽章打开右侧用量统计面板（余额与消耗、每日分布、消耗排行、模型 × 思考强度排行）：
+
+![panel](https://github.com/lancecheney/dsh-plugins/raw/main/docs/panel.png)
+
 ## Layout / 结构
 
 ```
