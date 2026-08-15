@@ -155,12 +155,15 @@ window.__ModuleLoader__.load({
 			react.useEffect(() => {
 				const frame = findFrame();
 				if (!frame) return;
-				const apply = () => { const w = sidebarWidthOf(frame); if (w !== null) setSidebarW(w); };
-				apply();
-				const mo = new MutationObserver(apply);
-				mo.observe(frame, { attributes: true });
-				window.addEventListener("resize", apply);
-				return () => { mo.disconnect(); window.removeEventListener("resize", apply); };
+				let raf = 0;
+				let last = null;
+				const tick = () => {
+					const w = sidebarWidthOf(frame);
+					if (w !== null && w !== last) { last = w; setSidebarW(w); }
+					raf = requestAnimationFrame(tick);
+				};
+				raf = requestAnimationFrame(tick);
+				return () => cancelAnimationFrame(raf);
 			}, []);
 
 			const months = react.useMemo(() => {
