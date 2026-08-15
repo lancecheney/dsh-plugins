@@ -43,7 +43,7 @@ window.__ModuleLoader__.load({
 		function fmtTokens(n) { if (!Number.isFinite(n)) return "—"; if (n < 1000) return String(Math.round(n)); const scaled = (v) => v >= 100 ? String(Math.round(v)) : String(Math.round(v * 10) / 10); if (n < 1e6) return scaled(n / 1e3) + "K"; return scaled(n / 1e6) + "M"; }
 		function fmtDuration(ms) { if (!Number.isFinite(ms) || ms <= 0) return "—"; const s = ms / 1e3; if (s < 60) return Math.round(s) + "s"; const w = Math.round(s); const h = Math.floor(w / 3600); const m = Math.floor((w % 3600) / 60); if (h > 0) return h + "h" + m + "m"; return m + "m" + (w % 60) + "s"; }
 		function beijingMonthKey(ms) { return new Date(ms + 8 * 3600 * 1000).toISOString().slice(0, 7); }
-		function sidebarWidthFrom(el) { let node = el; while (node && node.parentElement) { node = node.parentElement; const cols = getComputedStyle(node).gridTemplateColumns.split(" "); if (cols.length >= 2 && cols[0].endsWith("px") && cols[1].includes("1fr")) return parseFloat(cols[0]) || 0; } return 0; }
+		function sidebarWidthFrom(el) { let node = el; while (node && node.parentElement) { node = node.parentElement; const gt = getComputedStyle(node).gridTemplateColumns; if (gt.indexOf("1fr") !== -1) { const m = gt.match(/(\d+(?:\.\d+)?)px/); if (m) return parseFloat(m[1]); } } return null; }
 		const noopSubscribe = () => () => {};
 
 		function dayColor(d) { if (!d || d.tokens <= 0) return "none"; if (d.flat >= d.peak && d.flat >= d.offPeak) return "flat"; return d.peak >= d.offPeak ? "peak" : "off"; }
@@ -152,7 +152,7 @@ window.__ModuleLoader__.load({
 			}, []);
 
 			react.useEffect(() => {
-				const measure = () => setSidebarW(sidebarWidthFrom(rootRef.current) || (rootRef.current ? 0 : 0));
+				const measure = () => { const w = sidebarWidthFrom(rootRef.current); if (w !== null) setSidebarW(w); };
 				measure();
 				window.addEventListener("resize", measure);
 				return () => window.removeEventListener("resize", measure);
