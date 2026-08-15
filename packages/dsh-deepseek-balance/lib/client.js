@@ -7,7 +7,7 @@ window.__ModuleLoader__.load({
 		let react = require("react");
 
 		const css = ".Dbg1_root{display:inline-flex;align-items:center;gap:6px;height:32px;border:1px solid var(--dsw-alias-border-l2);border-radius:18px;padding:0 12px;font-family:var(--dsw-font-family);font-size:12px;line-height:18px;color:var(--dsw-alias-label-secondary);background:0 0;white-space:nowrap;cursor:pointer}.Dbg1_root:hover{background:var(--dsw-alias-interactive-bg-hover)}.Dbg1_num{color:var(--dsw-alias-label-primary);font-variant-numeric:tabular-nums;font-weight:500}.Dbg1_sep{color:var(--dsw-alias-label-dimmed)}.Dbg1_chip{border-radius:9px;padding:0 8px;font-size:11px;line-height:18px;font-weight:600}.Dbg1_peak{color:var(--dsw-alias-state-warn-primary)}.Dbg1_offPeak{color:var(--dsw-alias-state-success-primary)}.Dbg1_legacy{color:var(--dsw-alias-label-tertiary)}.Dbg1_dimmed{color:var(--dsw-alias-label-dimmed)}.Dbg1_plus{font-size:9px;line-height:1;vertical-align:super;color:var(--dsw-alias-state-warn-primary);font-weight:700}.Dbg1_unit{font-size:10px}";
-		const css2 = ".Dp1_backdrop{position:fixed;top:0;bottom:0;right:0;background:rgba(0,0,0,.32);z-index:60}.Dp1_panel{position:fixed;top:0;bottom:0;right:0;z-index:61;display:flex;flex-direction:column;background:var(--dsw-alias-bg-base);border-left:1px solid var(--dsw-alias-border-l1);box-shadow:var(--dsw-shadow-lv3);overflow-y:auto}.Dp1_head{display:flex;flex-direction:column;align-items:center;gap:6px;padding:32px 48px 22px;position:relative}.Dp1_avatar{width:56px;height:56px;border-radius:50%;background:var(--dsw-alias-fill-l2);color:var(--dsw-alias-label-primary);display:flex;align-items:center;justify-content:center;font-weight:700;font-size:20px;flex:none}.Dp1_name{font-size:16px;font-weight:600;color:var(--dsw-alias-label-primary)}.Dp1_key{font-family:var(--dsw-font-mono);color:var(--dsw-alias-label-tertiary);font-size:12px}.Dp1_close{position:absolute;top:16px;right:16px;cursor:pointer;background:0 0;border:0;color:var(--dsw-alias-label-secondary);font-size:22px;line-height:1}.Dp1_body{padding:0 48px 36px;display:flex;flex-direction:column;gap:22px}.Dp1_stats{display:flex;align-items:center;justify-content:center;gap:16px;flex-wrap:wrap;padding:16px 0;border-top:1px solid var(--dsw-alias-border-l2);border-bottom:1px solid var(--dsw-alias-border-l2)}.Dp1_statItem{display:flex;flex-direction:column;align-items:center;gap:2px}.Dp1_statValue{font-size:15px;font-weight:600;color:var(--dsw-alias-label-primary);font-variant-numeric:tabular-nums}.Dp1_statLabel{font-size:11px;color:var(--dsw-alias-label-tertiary)}.Dp1_sepBar{color:var(--dsw-alias-label-dimmed);font-size:14px}.Dp1_balance{display:flex;flex-direction:column;align-items:center;gap:10px;padding:6px 0}.Dp1_balanceLabel{font-size:12px;color:var(--dsw-alias-label-tertiary)}.Dp1_balanceMain{font-size:34px;font-weight:700;color:var(--dsw-alias-label-primary);font-variant-numeric:tabular-nums;line-height:1.05}.Dp1_balanceSub{display:flex;gap:16px;font-size:13px;color:var(--dsw-alias-label-secondary)}.Dp1_btn{display:inline-flex;align-items:center;justify-content:center;height:36px;padding:0 22px;border-radius:999px;border:1px solid var(--dsw-alias-border-l2);background:0 0;color:var(--dsw-alias-label-primary);cursor:pointer;font-size:13px}.Dp1_btn:hover{background:var(--dsw-alias-interactive-bg-hover)}.Dp1_btnPrimary{background:var(--dsw-alias-state-success-primary);color:#fff;border:none}.Dp1_section{padding:16px 0;border-top:1px solid var(--dsw-alias-border-l2)}.Dp1_title{font-size:12px;color:var(--dsw-alias-label-tertiary);margin:0 0 12px;font-weight:600;letter-spacing:.02em}.Dp1_row{display:flex;align-items:center;gap:8px;padding:7px 0}.Dp1_rowTitle{flex:1;min-width:0;color:var(--dsw-alias-label-primary);font-size:13px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}.Dp1_rowTitleGray{color:var(--dsw-alias-label-dimmed)}.Dp1_rowVal{color:var(--dsw-alias-label-secondary);font-variant-numeric:tabular-nums;font-size:12px;flex:none}.Dp1_rank{color:var(--dsw-alias-label-tertiary);width:18px;text-align:right;flex:none;font-size:12px}.Dp1_monthNav{display:flex;align-items:center;justify-content:center;gap:16px;margin-bottom:12px}.Dp1_grid{display:grid;grid-template-columns:repeat(7,1fr);gap:5px;max-width:300px;margin:0 auto}.Dp1_cell{aspect-ratio:1;border-radius:6px;background:var(--dsw-alias-fill-l1);display:flex;align-items:center;justify-content:center;font-size:10px;color:var(--dsw-alias-label-tertiary)}.Dp1_cellFlat{background:#bfdbfe;color:#1e3a5f}.Dp1_cellPeak{background:#fdba74;color:#7c2d12}.Dp1_cellOff{background:#86efac;color:#14532d}.Dp1_legend{display:flex;gap:14px;margin-top:12px;justify-content:center;font-size:11px;color:var(--dsw-alias-label-tertiary);flex-wrap:wrap}.Dp1_dot{display:inline-block;width:8px;height:8px;border-radius:2px;margin-right:4px;vertical-align:middle}.Dp1_nameRow{display:flex;align-items:center;gap:6px}.Dp1_edit{border:0;background:0 0;cursor:pointer;color:var(--dsw-alias-label-tertiary);font-size:13px;padding:2px;line-height:1}.Dp1_edit:hover{color:var(--dsw-alias-label-primary)}.Dp1_editRow{display:flex;align-items:center;gap:8px}.Dp1_editInput{height:30px;padding:0 10px;border:1px solid var(--dsw-alias-border-l2);border-radius:8px;background:var(--dsw-alias-fill-l1);color:var(--dsw-alias-label-primary);font-size:13px;width:180px}";
+		const css2 = ".Dp1_backdrop{position:fixed;top:0;bottom:0;right:0;background:rgba(0,0,0,.32);z-index:60}.Dp1_panel{position:fixed;top:0;bottom:0;right:0;z-index:61;display:flex;flex-direction:column;background:var(--dsw-alias-bg-base);border-left:1px solid var(--dsw-alias-border-l1);box-shadow:var(--dsw-shadow-lv3);overflow-y:auto}.Dp1_head{display:flex;flex-direction:column;align-items:center;gap:8px;padding:32px 56px 22px;position:relative}.Dp1_avatar{width:64px;height:64px;border-radius:50%;background:var(--dsw-alias-fill-l2);color:var(--dsw-alias-label-primary);display:flex;align-items:center;justify-content:center;font-weight:700;font-size:24px;flex:none;border:2px solid var(--dsw-alias-border-l2)}.Dp1_name{font-size:18px;font-weight:600;color:var(--dsw-alias-label-primary)}.Dp1_key{font-family:var(--dsw-font-mono);color:var(--dsw-alias-label-tertiary);font-size:13px}.Dp1_close{position:fixed;top:16px;right:16px;cursor:pointer;background:0 0;border:0;color:var(--dsw-alias-label-secondary);font-size:22px;line-height:1;z-index:62}.Dp1_body{padding:0 56px 36px;display:flex;flex-direction:column;gap:26px}.Dp1_stats{display:flex;align-items:center;justify-content:center;gap:56px;flex-wrap:wrap;padding:18px 0}.Dp1_statItem{display:flex;flex-direction:column;align-items:center;gap:4px}.Dp1_statValue{font-size:18px;font-weight:600;color:var(--dsw-alias-label-primary);font-variant-numeric:tabular-nums}.Dp1_statLabel{font-size:12px;color:var(--dsw-alias-label-tertiary)}.Dp1_sepBar{color:var(--dsw-alias-label-dimmed);font-size:14px}.Dp1_balance{display:flex;flex-wrap:wrap;gap:16px;justify-content:center;margin:0 auto}.Dp1_balanceBlock{position:relative;box-sizing:border-box;width:200px;background:rgba(127,127,127,.10);border-radius:14px;padding:10px 14px;display:flex;flex-direction:column;align-items:flex-start;gap:2px;height:80px}.Dp1_balanceBlockLabel{font-size:12px;color:var(--dsw-alias-label-tertiary)}.Dp1_balanceBlockValue{font-size:28px;font-weight:700;color:var(--dsw-alias-label-primary);font-variant-numeric:tabular-nums;margin-top:auto}.Dp1_balanceBlock .Dp1_btn{position:absolute;right:12px;top:10px;height:22px;padding:0 8px;font-size:12px}.Dp1_btn{display:inline-flex;align-items:center;justify-content:center;height:30px;padding:0 12px;border-radius:999px;border:1px solid var(--dsw-alias-border-l2);background:0 0;color:var(--dsw-alias-label-primary);cursor:pointer;font-size:13px}.Dp1_btn:hover{background:var(--dsw-alias-interactive-bg-hover)}.Dp1_btnPrimary{background:#4d6bfe;color:#fff;border:none}.Dp1_section{padding:16px 0}.Dp1_title{font-size:13px;color:var(--dsw-alias-label-secondary);margin:0 0 12px;font-weight:600;letter-spacing:.02em}.Dp1_row{display:flex;align-items:center;gap:8px;padding:7px 0}.Dp1_twoCol{display:flex;flex-wrap:wrap;gap:24px 80px;align-items:flex-start}.Dp1_twoCol .Dp1_section{flex:1 1 260px;min-width:0}.Dp1_rowTitle{flex:1;min-width:0;color:var(--dsw-alias-label-primary);font-size:14px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}.Dp1_rowTitleGray{color:var(--dsw-alias-label-dimmed)}.Dp1_rowVal{color:var(--dsw-alias-label-secondary);font-variant-numeric:tabular-nums;font-size:13px;flex:none}.Dp1_rank{color:var(--dsw-alias-label-tertiary);width:18px;text-align:right;flex:none;font-size:13px}.Dp1_monthNav{display:flex;align-items:center;justify-content:center;gap:16px;margin-bottom:14px}.Dp1_monthGrids{display:flex;flex-wrap:wrap;gap:20px}.Dp1_monthGrids .Dp1_monthGroup{flex:1 1 260px;min-width:0}.Dp1_monthGroup{display:flex;flex-direction:column;align-items:center;gap:8px}.Dp1_monthGroupTitle{font-size:12px;color:var(--dsw-alias-label-tertiary)}.Dp1_grid{display:grid;grid-template-columns:repeat(7,1fr);gap:5px;width:100%;max-width:170px}.Dp1_cell{aspect-ratio:1;border-radius:6px;background:rgba(127,127,127,.08);display:flex;align-items:center;justify-content:center;font-size:10px;color:var(--dsw-alias-label-tertiary)}.Dp1_cellFlat{background:#60a5fa;color:#fff}.Dp1_cellPeak{background:#f97316;color:#fff}.Dp1_cellOff{background:#22c55e;color:#fff}.Dp1_cellBlue{color:#fff}.Dp1_legend{display:flex;gap:12px;margin-top:10px;justify-content:center;font-size:11px;color:var(--dsw-alias-label-tertiary);flex-wrap:wrap}.Dp1_dot{display:inline-block;width:8px;height:8px;border-radius:2px;margin-right:4px;vertical-align:middle}.Dp1_nameRow{display:flex;align-items:center;gap:6px}.Dp1_edit{border:0;background:0 0;cursor:pointer;color:var(--dsw-alias-label-tertiary);font-size:14px;padding:2px;line-height:1}.Dp1_edit:hover{color:var(--dsw-alias-label-primary)}.Dp1_editRow{display:flex;align-items:center;gap:8px}.Dp1_editInput{height:30px;padding:0 10px;border:1px solid var(--dsw-alias-border-l2);border-radius:8px;background:var(--dsw-alias-fill-l1);color:var(--dsw-alias-label-primary);font-size:13px;width:180px}@media (max-width:640px){.Dbg1_root{margin-top:80px}.Dp1_head{padding:24px 16px 16px}.Dp1_body{padding:0 16px 24px}.Dp1_stats{gap:20px;padding:12px 0}.Dp1_close{right:12px;top:12px}}";
 		const injectCss = (text, tagId) => {
 			if (typeof document !== "undefined" && document.querySelector("style[data-plugin-css=" + JSON.stringify(tagId) + "]") === null) {
 				const tag = document.createElement("style");
@@ -20,7 +20,7 @@ window.__ModuleLoader__.load({
 		injectCss(css, "@lancecheney/dsh-deepseek-balance/BillingBadge.css");
 		injectCss(css2, "@lancecheney/dsh-deepseek-balance/UsagePanel.css");
 		const C = { root: "Dbg1_root", num: "Dbg1_num", sep: "Dbg1_sep", chip: "Dbg1_chip", peak: "Dbg1_peak", offPeak: "Dbg1_offPeak", legacy: "Dbg1_legacy", dimmed: "Dbg1_dimmed", plus: "Dbg1_plus", unit: "Dbg1_unit" };
-		const P = { backdrop: "Dp1_backdrop", panel: "Dp1_panel", head: "Dp1_head", avatar: "Dp1_avatar", name: "Dp1_name", key: "Dp1_key", close: "Dp1_close", body: "Dp1_body", stats: "Dp1_stats", statItem: "Dp1_statItem", statValue: "Dp1_statValue", statLabel: "Dp1_statLabel", sepBar: "Dp1_sepBar", balance: "Dp1_balance", balanceLabel: "Dp1_balanceLabel", balanceMain: "Dp1_balanceMain", balanceSub: "Dp1_balanceSub", btn: "Dp1_btn", btnPrimary: "Dp1_btnPrimary", section: "Dp1_section", title: "Dp1_title", row: "Dp1_row", rowTitle: "Dp1_rowTitle", rowTitleGray: "Dp1_rowTitleGray", rowVal: "Dp1_rowVal", rank: "Dp1_rank", monthNav: "Dp1_monthNav", grid: "Dp1_grid", cell: "Dp1_cell", cellFlat: "Dp1_cellFlat", cellPeak: "Dp1_cellPeak", cellOff: "Dp1_cellOff", legend: "Dp1_legend", dot: "Dp1_dot", nameRow: "Dp1_nameRow", edit: "Dp1_edit", editRow: "Dp1_editRow", editInput: "Dp1_editInput" };
+		const P = { backdrop: "Dp1_backdrop", panel: "Dp1_panel", head: "Dp1_head", avatar: "Dp1_avatar", name: "Dp1_name", key: "Dp1_key", close: "Dp1_close", body: "Dp1_body", stats: "Dp1_stats", statItem: "Dp1_statItem", statValue: "Dp1_statValue", statLabel: "Dp1_statLabel", sepBar: "Dp1_sepBar", balance: "Dp1_balance", balanceBlock: "Dp1_balanceBlock", balanceBlockLabel: "Dp1_balanceBlockLabel", balanceBlockValue: "Dp1_balanceBlockValue", btn: "Dp1_btn", btnPrimary: "Dp1_btnPrimary", section: "Dp1_section", title: "Dp1_title", row: "Dp1_row", twoCol: "Dp1_twoCol", rowTitle: "Dp1_rowTitle", rowTitleGray: "Dp1_rowTitleGray", rowVal: "Dp1_rowVal", rank: "Dp1_rank", monthNav: "Dp1_monthNav", monthGrids: "Dp1_monthGrids", monthGroup: "Dp1_monthGroup", monthGroupTitle: "Dp1_monthGroupTitle", grid: "Dp1_grid", cell: "Dp1_cell", cellFlat: "Dp1_cellFlat", cellPeak: "Dp1_cellPeak", cellOff: "Dp1_cellOff", cellBlue: "Dp1_cellBlue", legend: "Dp1_legend", dot: "Dp1_dot", nameRow: "Dp1_nameRow", edit: "Dp1_edit", editRow: "Dp1_editRow", editInput: "Dp1_editInput" };
 
 		const MODEL_META = { "deepseek-v4-pro": { label: "DeepSeek-V4-Pro" }, "deepseek-v4-flash": { label: "DeepSeek-V4-Flash" } };
 		const FALLBACK_PRICING = {
@@ -37,8 +37,6 @@ window.__ModuleLoader__.load({
 		function firstBalance(data) { const infos = data && data.balance_infos; if (!Array.isArray(infos) || infos.length === 0) return null; return infos.find((r) => r.currency === "CNY") || infos[0]; }
 		function fmtPrice(v) { const n = Number(v); return Number.isFinite(n) ? String(n) : String(v); }
 		function fmtMoney(v) { const n = Number(v); if (!Number.isFinite(n)) return "—"; if (n <= 0) return "0.00"; if (n < 0.01) return n.toFixed(4); if (n < 1) return n.toFixed(3); return n.toFixed(2); }
-		function costOf(usage, p) { const miss = (usage.uncachedInputTokens ?? 0) + (usage.cacheWriteTokens ?? 0); const hit = usage.cacheReadTokens ?? 0; const output = usage.outputTokens ?? 0; return (miss * p.miss + hit * p.hit + output * p.output) / 1e6; }
-		function sumBuckets(a, b) { return { uncachedInputTokens: (a.uncachedInputTokens ?? 0) + (b.uncachedInputTokens ?? 0), outputTokens: (a.outputTokens ?? 0) + (b.outputTokens ?? 0), cacheReadTokens: (a.cacheReadTokens ?? 0) + (b.cacheReadTokens ?? 0), cacheWriteTokens: (a.cacheWriteTokens ?? 0) + (b.cacheWriteTokens ?? 0) }; }
 		function translate(dict, key, params) { let s = dict[key]; if (s === void 0) return key; if (params) for (const [k, v] of Object.entries(params)) s = s.split(`{${k}}`).join(String(v)); return s; }
 		function fmtTokens(n) { if (!Number.isFinite(n)) return "—"; if (n < 1000) return String(Math.round(n)); const scaled = (v) => v >= 100 ? String(Math.round(v)) : String(Math.round(v * 10) / 10); if (n < 1e6) return scaled(n / 1e3) + "K"; return scaled(n / 1e6) + "M"; }
 		function fmtDuration(ms) { if (!Number.isFinite(ms) || ms <= 0) return "—"; const s = ms / 1e3; if (s < 60) return Math.round(s) + "s"; const w = Math.round(s); const h = Math.floor(w / 3600); const m = Math.floor((w % 3600) / 60); if (h > 0) return h + "h" + m + "m"; return m + "m" + (w % 60) + "s"; }
@@ -48,7 +46,7 @@ window.__ModuleLoader__.load({
 		function sidebarWidthOf(frame) { const col = frame && frame.firstElementChild; return col ? col.getBoundingClientRect().width : null; }
 		const noopSubscribe = () => () => {};
 		function dayColor(d) { if (!d || d.tokens <= 0) return "none"; if (d.flat >= d.peak && d.flat >= d.offPeak) return "flat"; return d.peak >= d.offPeak ? "peak" : "off"; }
-		function spendOf(dayData, model) { if (!dayData) return 0; const c = (tokens, price) => (tokens || 0) * (price ? price.output : 0) / 1e6; const legacy = model.legacy ? c(dayData.flat, model.legacy) : 0; return legacy + c(dayData.peak, model.peak) + c(dayData.offPeak, model.offPeak); }
+		function tokenBlue(tokens, max) { if (!tokens || tokens <= 0 || max <= 0) return null; const r = tokens / max; if (r < 0.2) return "#93c5fd"; if (r < 0.4) return "#60a5fa"; if (r < 0.6) return "#3b82f6"; if (r < 0.8) return "#2563eb"; return "#1e40af"; }
 		function monthGrid(year, month, daysData) {
 			const first = new Date(Date.UTC(year, month, 1));
 			const daysInMonth = new Date(Date.UTC(year, month + 1, 0)).getUTCDate();
@@ -63,10 +61,8 @@ window.__ModuleLoader__.load({
 		}
 
 		function BillingBadge(props) {
-			const useProjection = props.useProjection;
 			const directory = props.directory;
-			const usage = useProjection("tokenUsage");
-			const byPeriod = useProjection("tokenUsageByPeriod");
+			const sessionId = props.sessionId;
 			const [open, setOpen] = react.useState(false);
 			const [state, setState] = react.useState({ phase: "loading" });
 
@@ -74,19 +70,22 @@ window.__ModuleLoader__.load({
 				let alive = true; let timer;
 				const load = async () => {
 					try {
-						const [balanceRes, pricingRes] = await Promise.all([
+						const usageUrl = sessionId ? `/api/deepseek-usage?session=${encodeURIComponent(sessionId)}` : "/api/deepseek-usage";
+						const [balanceRes, pricingRes, usageRes] = await Promise.all([
 							fetch("/api/deepseek-balance", { headers: { accept: "application/json" }, cache: "no-store" }),
-							fetch("/api/deepseek-pricing", { headers: { accept: "application/json" }, cache: "no-store" })
+							fetch("/api/deepseek-pricing", { headers: { accept: "application/json" }, cache: "no-store" }),
+							fetch(usageUrl, { headers: { accept: "application/json" }, cache: "no-store" })
 						]);
 						const balanceData = await balanceRes.json().catch(() => ({}));
 						const pricingData = await pricingRes.json().catch(() => null);
+						const usageData = await usageRes.json().catch(() => null);
 						if (!alive) return;
-						setState({ phase: "ok", balance: balanceRes.ok ? balanceData : null, pricing: pricingData && pricingRes.ok && pricingData.currencies ? pricingData : FALLBACK_PRICING });
+						setState({ phase: "ok", balance: balanceRes.ok ? balanceData : null, pricing: pricingData && pricingRes.ok && pricingData.currencies ? pricingData : FALLBACK_PRICING, usage: usageData && usageData.spend ? usageData : null });
 					} catch (e) { if (alive) setState({ phase: "error" }); }
 				};
-				load(); timer = setInterval(load, 60000);
+				load(); timer = setInterval(load, 30000);
 				return () => { alive = false; clearInterval(timer); };
-			}, []);
+			}, [sessionId]);
 
 			const pricing = state.pricing || FALLBACK_PRICING;
 			const effectiveFrom = pricing.effectiveFrom || FALLBACK_PRICING.effectiveFrom;
@@ -109,7 +108,7 @@ window.__ModuleLoader__.load({
 			const model = models[modelId] || models[DEFAULT_MODEL] || FALLBACK_PRICING.currencies.CNY.models[DEFAULT_MODEL];
 			const p = (period === "peak" ? model.peak : period === "offPeak" ? model.offPeak : model.legacy) || model.peak;
 			const outputPrice = fmtPrice(p.output);
-			const cost = (() => { if (byPeriod && byPeriod.peak && byPeriod.offPeak) { if (isLegacy) return model.legacy ? costOf(sumBuckets(byPeriod.peak, byPeriod.offPeak), model.legacy) : null; return costOf(byPeriod.peak, model.peak) + costOf(byPeriod.offPeak, model.offPeak); } return usage !== undefined && usage !== null ? costOf(usage, p) : null; })();
+			const cost = state.usage && state.usage.spend ? state.usage.spend.total : null;
 			const plus = reasoningEffort === "max" ? "++" : reasoningEffort === "off" ? "" : "+";
 			const periodClass = isLegacy ? C.legacy : isPeak ? C.peak : C.offPeak;
 			const periodLabel = isLegacy ? tr("period.legacy") : isPeak ? tr("period.peak") : tr("period.offPeak");
@@ -134,7 +133,8 @@ window.__ModuleLoader__.load({
 			const [usageData, setUsageData] = react.useState(null);
 			const [balance, setBalance] = react.useState(null);
 			const [sidebarW, setSidebarW] = react.useState(280);
-			const [monthIdx, setMonthIdx] = react.useState(0);
+			const [monthIdxPeriod, setMonthIdxPeriod] = react.useState(0);
+			const [monthIdxTokens, setMonthIdxTokens] = react.useState(0);
 			const [editing, setEditing] = react.useState(false);
 			const [draft, setDraft] = react.useState("");
 
@@ -171,22 +171,21 @@ window.__ModuleLoader__.load({
 				set.add(cur);
 				return [...set].sort();
 			}, [usageData]);
-			const monthKey = months[months.length - 1 - monthIdx] || beijingMonthKey(Date.now());
-			const [year, month] = monthKey.split("-").map(Number);
-
-			const cells = react.useMemo(() => monthGrid(year, month - 1, usageData ? usageData.days : {}), [year, month, usageData]);
+			const monthKeyPeriod = months[months.length - 1 - monthIdxPeriod] || beijingMonthKey(Date.now());
+			const [yP, mP] = monthKeyPeriod.split("-").map(Number);
+			const cellsPeriod = react.useMemo(() => monthGrid(yP, mP - 1, usageData ? usageData.days : {}), [yP, mP, usageData]);
+			const monthKeyTokens = months[months.length - 1 - monthIdxTokens] || beijingMonthKey(Date.now());
+			const [yT, mT] = monthKeyTokens.split("-").map(Number);
+			const cellsTokens = react.useMemo(() => monthGrid(yT, mT - 1, usageData ? usageData.days : {}), [yT, mT, usageData]);
+			const maxDayTokens = react.useMemo(() => {
+				if (!usageData || !usageData.days) return 0;
+				return Object.values(usageData.days).reduce((m, d) => Math.max(m, d.tokens || 0), 0);
+			}, [usageData]);
 			const pricingSet = (pricing.currencies && pricing.currencies[currency]) || pricing.currencies.CNY;
 			const sym = pricingSet.symbol || "¥";
-			const models = pricingSet.models || {};
-			const model = models[DEFAULT_MODEL] || { legacy: null, peak: { hit: 0, miss: 0, output: 0 }, offPeak: { hit: 0, miss: 0, output: 0 } };
 
-			const totalSpend = (() => {
-				if (!usageData) return null;
-				const c = (tokens, price) => tokens * price.output / 1e6;
-				const legacyCost = model.legacy ? c(usageData.flatTokens ?? 0, model.legacy) : 0;
-				return legacyCost + c(usageData.peakTokens ?? 0, model.peak) + c(usageData.offPeakTokens ?? 0, model.offPeak);
-			})();
-			const todaySpend = usageData ? spendOf(usageData.days ? usageData.days[beijingDayKey(Date.now())] : null, model) : null;
+			const totalSpend = usageData && usageData.spend ? usageData.spend.total : null;
+			const todaySpend = usageData && usageData.spend ? usageData.spend.today : null;
 
 			const modelEffortList = react.useMemo(() => {
 				if (!usageData || !usageData.modelEffort) return [];
@@ -196,8 +195,14 @@ window.__ModuleLoader__.load({
 			const cellFor = (cell) => {
 				if (!cell) return react.createElement("div", { key: "b" + Math.random(), className: P.cell });
 				const color = dayColor(cell.data);
-				const cls = color === "flat" ? P.cellFlat : color === "peak" ? P.cellPeak : color === "off" ? P.cellOff : P.cell;
+				const cls = color === "flat" ? P.cell + " " + P.cellFlat : color === "peak" ? P.cell + " " + P.cellPeak : color === "off" ? P.cell + " " + P.cellOff : P.cell;
 				return react.createElement("div", { key: cell.key, className: cls, title: cell.key }, cell.day);
+			};
+			const tokenCellFor = (cell) => {
+				if (!cell) return react.createElement("div", { key: "t" + Math.random(), className: P.cell });
+				const tokens = cell.data ? cell.data.tokens : 0;
+				const color = tokenBlue(tokens, maxDayTokens);
+				return react.createElement("div", { key: cell.key, className: P.cell + (color ? " " + P.cellBlue : ""), style: color ? { background: color } : void 0, title: cell.key }, cell.day);
 			};
 
 			const modelLabel = (k) => { const [m, e] = k.split("|"); return `${(MODEL_META[m] || {}).label || m}${e ? " · " + e : ""}`; };
@@ -232,51 +237,77 @@ window.__ModuleLoader__.load({
 							stat(tr("stat.longStreak"), usageData ? usageData.longestStreak + tr("unit.day") : "…")
 						),
 						react.createElement("div", { className: P.balance },
-							react.createElement("div", { className: P.balanceLabel }, tr("label.balance")),
-							react.createElement("div", { className: P.balanceMain }, balance ? `${sym}${fmtMoney(Number(balance.total_balance))}` : "…"),
-							react.createElement("div", { className: P.balanceSub },
-								react.createElement("span", null, `${tr("stat.today")} ${todaySpend !== null ? sym + fmtMoney(todaySpend) : "…"}`), sepBar("b1"),
-								react.createElement("span", null, `${tr("stat.cumulative")} ${totalSpend !== null ? sym + fmtMoney(totalSpend) : "…"}`)
+							react.createElement("div", { className: P.balanceBlock },
+								react.createElement("div", { className: P.balanceBlockLabel }, tr("stat.today")),
+								react.createElement("div", { className: P.balanceBlockValue }, todaySpend !== null ? `${sym}${fmtMoney(todaySpend)}` : "…")
 							),
-							react.createElement("button", { className: P.btn + " " + P.btnPrimary, onClick: () => window.open("https://platform.deepseek.com/usage", "_blank", "noopener") }, tr("panel.topup"))
-						),
-						react.createElement("div", { className: P.section },
-							react.createElement("h3", { className: P.title }, tr("panel.topSessions")),
-							(usageData ? (usageData.sessions || []).slice(0, 8) : []).map((s, i) => react.createElement("div", { key: s.id, className: P.row },
-								react.createElement("span", { className: P.rank }, String(i + 1)),
-								react.createElement("span", { className: P.rowTitle + (s.archived ? " " + P.rowTitleGray : "") }, s.title || s.id),
-								react.createElement("span", { className: P.rowVal }, fmtTokens(s.tokens))
-							))
-						),
-						react.createElement("div", { className: P.section },
-							react.createElement("h3", { className: P.title }, tr("panel.month")),
-							react.createElement("div", { className: P.monthNav },
-								react.createElement("button", { className: P.btn, disabled: monthIdx >= months.length - 1, onClick: () => setMonthIdx(monthIdx + 1) }, "‹"),
-								react.createElement("span", { className: P.rowVal }, monthKey),
-								react.createElement("button", { className: P.btn, disabled: monthIdx <= 0, onClick: () => setMonthIdx(monthIdx - 1) }, "›")
+							react.createElement("div", { className: P.balanceBlock },
+								react.createElement("div", { className: P.balanceBlockLabel }, tr("stat.cumulative")),
+								react.createElement("div", { className: P.balanceBlockValue }, totalSpend !== null ? `${sym}${fmtMoney(totalSpend)}` : "…")
 							),
-							react.createElement("div", { className: P.grid }, cells.map(cellFor)),
-							react.createElement("div", { className: P.legend },
-								react.createElement("span", null, react.createElement("span", { className: P.dot, style: { background: "#bfdbfe" } }), tr("legend.flat")),
-								react.createElement("span", null, react.createElement("span", { className: P.dot, style: { background: "#fdba74" } }), tr("legend.peak")),
-								react.createElement("span", null, react.createElement("span", { className: P.dot, style: { background: "#86efac" } }), tr("legend.off")),
-								react.createElement("span", null, react.createElement("span", { className: P.dot, style: { background: "var(--dsw-alias-fill-l1)" } }), tr("legend.none"))
+							react.createElement("div", { className: P.balanceBlock },
+								react.createElement("div", { className: P.balanceBlockLabel }, tr("label.balance")),
+								react.createElement("div", { className: P.balanceBlockValue }, balance ? `${sym}${fmtMoney(Number(balance.total_balance))}` : "…"),
+								react.createElement("button", { className: P.btn + " " + P.btnPrimary, onClick: () => window.open("https://platform.deepseek.com/usage", "_blank", "noopener") }, tr("panel.topup"))
 							)
 						),
 						react.createElement("div", { className: P.section },
-							react.createElement("h3", { className: P.title }, tr("panel.peakSessions")),
-							(usageData ? [...(usageData.sessions || [])].sort((a, b) => b.peakTokens - a.peakTokens).slice(0, 5) : []).map((s, i) => react.createElement("div", { key: s.id, className: P.row },
-								react.createElement("span", { className: P.rank }, String(i + 1)),
-								react.createElement("span", { className: P.rowTitle }, s.title || s.id),
-								react.createElement("span", { className: P.rowVal }, fmtTokens(s.peakTokens))
-							))
+							react.createElement("h3", { className: P.title }, tr("panel.month")),
+							react.createElement("div", { className: P.monthGrids },
+								react.createElement("div", { className: P.monthGroup },
+									react.createElement("div", { className: P.monthNav },
+										react.createElement("button", { className: P.btn, disabled: monthIdxPeriod >= months.length - 1, onClick: () => setMonthIdxPeriod(monthIdxPeriod + 1) }, "‹"),
+										react.createElement("span", { className: P.rowVal }, tr("panel.monthPeriod") + " · " + monthKeyPeriod),
+										react.createElement("button", { className: P.btn, disabled: monthIdxPeriod <= 0, onClick: () => setMonthIdxPeriod(monthIdxPeriod - 1) }, "›")
+									),
+									react.createElement("div", { className: P.grid }, cellsPeriod.map(cellFor)),
+									react.createElement("div", { className: P.legend },
+										react.createElement("span", null, react.createElement("span", { className: P.dot, style: { background: "#60a5fa" } }), tr("legend.flat")),
+										react.createElement("span", null, react.createElement("span", { className: P.dot, style: { background: "#f97316" } }), tr("legend.peak")),
+										react.createElement("span", null, react.createElement("span", { className: P.dot, style: { background: "#22c55e" } }), tr("legend.off")),
+										react.createElement("span", null, react.createElement("span", { className: P.dot, style: { background: "rgba(127,127,127,.15)" } }), tr("legend.none"))
+									)
+								),
+								react.createElement("div", { className: P.monthGroup },
+									react.createElement("div", { className: P.monthNav },
+										react.createElement("button", { className: P.btn, disabled: monthIdxTokens >= months.length - 1, onClick: () => setMonthIdxTokens(monthIdxTokens + 1) }, "‹"),
+										react.createElement("span", { className: P.rowVal }, tr("panel.monthTokens") + " · " + monthKeyTokens),
+										react.createElement("button", { className: P.btn, disabled: monthIdxTokens <= 0, onClick: () => setMonthIdxTokens(monthIdxTokens - 1) }, "›")
+									),
+									react.createElement("div", { className: P.grid }, cellsTokens.map(tokenCellFor)),
+									react.createElement("div", { className: P.legend },
+										react.createElement("span", null, react.createElement("span", { className: P.dot, style: { background: "#93c5fd" } }), tr("legend.less")),
+										react.createElement("span", null, react.createElement("span", { className: P.dot, style: { background: "#1e40af" } }), tr("legend.more"))
+									)
+								)
+							)
 						),
-						react.createElement("div", { className: P.section },
-							react.createElement("h3", { className: P.title }, tr("panel.modelEffort")),
-							modelEffortList.map((m) => react.createElement("div", { key: m.key, className: P.row },
-								react.createElement("span", { className: P.rowTitle }, modelLabel(m.key)),
-								react.createElement("span", { className: P.rowVal }, fmtTokens(m.tokens))
-							))
+						react.createElement("div", { className: P.twoCol },
+							react.createElement("div", { className: P.section },
+								react.createElement("h3", { className: P.title }, tr("panel.topSessions")),
+								(usageData ? (usageData.sessions || []).slice(0, 8) : []).map((s, i) => react.createElement("div", { key: s.id, className: P.row },
+									react.createElement("span", { className: P.rank }, String(i + 1)),
+									react.createElement("span", { className: P.rowTitle + (s.archived ? " " + P.rowTitleGray : "") }, s.title || s.id),
+									react.createElement("span", { className: P.rowVal }, fmtTokens(s.tokens))
+								))
+							),
+							react.createElement("div", { className: P.section },
+								react.createElement("h3", { className: P.title }, tr("panel.peakSessions")),
+								(usageData ? [...(usageData.sessions || [])].sort((a, b) => b.peakTokens - a.peakTokens).slice(0, 5) : []).map((s, i) => react.createElement("div", { key: s.id, className: P.row },
+									react.createElement("span", { className: P.rank }, String(i + 1)),
+									react.createElement("span", { className: P.rowTitle }, s.title || s.id),
+									react.createElement("span", { className: P.rowVal }, fmtTokens(s.peakTokens))
+								))
+							)
+						),
+						react.createElement("div", { className: P.twoCol },
+							react.createElement("div", { className: P.section },
+								react.createElement("h3", { className: P.title }, tr("panel.modelEffort")),
+								modelEffortList.map((m) => react.createElement("div", { key: m.key, className: P.row },
+									react.createElement("span", { className: P.rowTitle }, modelLabel(m.key)),
+									react.createElement("span", { className: P.rowVal }, fmtTokens(m.tokens))
+								))
+							)
 						)
 					)
 				)
@@ -288,21 +319,21 @@ window.__ModuleLoader__.load({
 			"label.spent": "消耗", "label.balance": "余额", "label.model": "模型",
 			"period.peak": "高峰", "period.offPeak": "空闲", "period.legacy": "平价",
 			"balance.unavailable": "余额不可用",
-			"panel.stats": "统计", "panel.balance": "余额与消耗", "panel.topup": "去官方充值", "panel.save": "保存",
-			"panel.topSessions": "消耗最多的对话", "panel.month": "每日时段分布", "panel.peakSessions": "高峰消耗排行", "panel.modelEffort": "模型与思考强度",
+			"panel.stats": "统计", "panel.balance": "余额与消耗", "panel.topup": "跳转API官网", "panel.save": "保存",
+			"panel.topSessions": "消耗最多的对话", "panel.month": "每日分布", "panel.monthPeriod": "每日时段分布", "panel.monthTokens": "每日 Token 消耗", "panel.peakSessions": "高峰消耗排行", "panel.modelEffort": "模型与思考强度",
 			"stat.total": "累计 Token", "stat.dailyPeak": "每日峰值", "stat.longest": "最长聊天", "stat.curStreak": "当前连续", "stat.longStreak": "最长连续", "stat.today": "今日消耗", "stat.cumulative": "累计消耗",
 			"unit.day": " 天",
-			"legend.flat": "平价", "legend.peak": "高峰", "legend.off": "空闲", "legend.none": "无数据"
+			"legend.flat": "平价", "legend.peak": "高峰", "legend.off": "空闲", "legend.none": "无数据", "legend.less": "少", "legend.more": "多"
 		};
 		const en = {
 			"label.spent": "Spent", "label.balance": "Balance", "label.model": "Model",
 			"period.peak": "Peak", "period.offPeak": "Off-peak", "period.legacy": "Flat",
 			"balance.unavailable": "balance unavailable",
-			"panel.stats": "Stats", "panel.balance": "Balance & Spend", "panel.topup": "Top up on DeepSeek", "panel.save": "Save",
-			"panel.topSessions": "Top conversations", "panel.month": "Daily period", "panel.peakSessions": "Peak-hour ranking", "panel.modelEffort": "Model & effort",
+			"panel.stats": "Stats", "panel.balance": "Balance & Spend", "panel.topup": "API site", "panel.save": "Save",
+			"panel.topSessions": "Top conversations", "panel.month": "Daily", "panel.monthPeriod": "Daily period", "panel.monthTokens": "Daily token usage", "panel.peakSessions": "Peak-hour ranking", "panel.modelEffort": "Model & effort",
 			"stat.total": "Total tokens", "stat.dailyPeak": "Daily peak", "stat.longest": "Longest chat", "stat.curStreak": "Current streak", "stat.longStreak": "Longest streak", "stat.today": "Today", "stat.cumulative": "Total",
 			"unit.day": "d",
-			"legend.flat": "Flat", "legend.peak": "Peak", "legend.off": "Off-peak", "legend.none": "None"
+			"legend.flat": "Flat", "legend.peak": "Peak", "legend.off": "Off-peak", "legend.none": "None", "legend.less": "Less", "legend.more": "More"
 		};
 
 		const inject = ["slots", "locale"];
@@ -316,7 +347,7 @@ window.__ModuleLoader__.load({
 					const models = ctx.get("modelDirectories");
 					let directory;
 					if (models && typeof models.directoryFor === "function") { try { directory = models.directoryFor(sessionId); } catch {} }
-					return { directory: directory ? directory.store : void 0 };
+					return { directory: directory ? directory.store : void 0, sessionId };
 				}
 			}, BillingBadge));
 		}

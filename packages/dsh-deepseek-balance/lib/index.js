@@ -275,27 +275,6 @@ function msUntilNextHourBeijing(hour) {
 	return deltaHours * 3600 * 1000 - bMinute * 60 * 1000 - bSecond * 1000 - bMs;
 }
 
-/** Beijing hour of a timestamp (UTC+8, no DST). */
-function beijingHourOf(time) {
-	return new Date(time + 8 * 3600 * 1000).getUTCHours();
-}
-
-function isPeakHour(hour) {
-	return (hour >= 9 && hour < 12) || (hour >= 14 && hour < 18);
-}
-
-const bucketSchema = z.object({
-	uncachedInputTokens: z.number().int().nonnegative(),
-	outputTokens: z.number().int().nonnegative(),
-	cacheReadTokens: z.number().int().nonnegative(),
-	cacheWriteTokens: z.number().int().nonnegative()
-});
-
-const tokenUsageByPeriodSchema = z.object({
-	peak: bucketSchema,
-	offPeak: bucketSchema
-});
-
 const zeroBucket = () => ({ uncachedInputTokens: 0, outputTokens: 0, cacheReadTokens: 0, cacheWriteTokens: 0 });
 
 const bucketsFrom = (usage) => ({
@@ -305,61 +284,12 @@ const bucketsFrom = (usage) => ({
 	cacheWriteTokens: usage.cacheWriteTokens ?? 0
 });
 
-const bucketsEqual = (a, b) =>
-	a.uncachedInputTokens === b.uncachedInputTokens &&
-	a.outputTokens === b.outputTokens &&
-	a.cacheReadTokens === b.cacheReadTokens &&
-	a.cacheWriteTokens === b.cacheWriteTokens;
-
 const addBucket = (total, delta) => ({
 	uncachedInputTokens: total.uncachedInputTokens + delta.uncachedInputTokens,
 	outputTokens: total.outputTokens + delta.outputTokens,
 	cacheReadTokens: total.cacheReadTokens + delta.cacheReadTokens,
 	cacheWriteTokens: total.cacheWriteTokens + delta.cacheWriteTokens
 });
-
-const subtractBucket = (total, delta) => ({
-	uncachedInputTokens: total.uncachedInputTokens - delta.uncachedInputTokens,
-	outputTokens: total.outputTokens - delta.outputTokens,
-	cacheReadTokens: total.cacheReadTokens - delta.cacheReadTokens,
-	cacheWriteTokens: total.cacheWriteTokens - delta.cacheWriteTokens
-});
-
-/**
- * Whole-log token usage bucketed by Beijing-time peak/off-peak hour, so the
- * client can price each hour at its own rate. Replacement semantics mirror the
- * token-meter `tokenUsage` projection: an assistant/message finalizes the usage
- * for its turn/step, replacing an earlier usage chunk instead of double counting.
- */
-const tokenUsageByPeriodProjection = {
-	key: "tokenUsageByPeriod",
-	schema: tokenUsageByPeriodSchema,
-	init: () => ({ totals: { peak: zeroBucket(), offPeak: zeroBucket() }, last: null }),
-	apply: (state, event) => {
-		let turn;
-		let step;
-		let usage;
-		if (event.type === "assistant/chunk" && event.data.chunk.type === "usage") {
-			({ turn, step } = event.data);
-			usage = event.data.chunk.usage;
-		} else if (event.type === "assistant/message" && event.data.usage !== void 0) {
-			({ turn, step, usage } = event.data);
-		} else {
-			return state;
-		}
-		const period = isPeakHour(beijingHourOf(event.time)) ? "peak" : "offPeak";
-		const buckets = bucketsFrom(usage);
-		const previous = state.last !== null && state.last.turn === turn && state.last.step === step ? state.last : void 0;
-		if (previous !== void 0 && previous.period === period && bucketsEqual(previous.buckets, buckets)) return state;
-		const totals = { peak: state.totals.peak, offPeak: state.totals.offPeak };
-		if (previous !== void 0) totals[previous.period] = subtractBucket(totals[previous.period], previous.buckets);
-		totals[period] = addBucket(totals[period], buckets);
-		return { totals, last: { turn, step, period, buckets } };
-	},
-	view: (state) => state.totals,
-	stateVersion: 1
-};
-
 
 const ZSTD_MAGIC = 4247762216;
 
@@ -442,7 +372,8 @@ function aggregateSessions(archivedIds = []) {
 		longestStreak: 0,
 		days: {},
 		sessions: [],
-		modelEffort: {}
+		modelEffort: {},
+		byModel: {}
 	};
 	if (!existsSync(root)) return summary;
 	const effectiveFromMs = Date.parse(pricing.data.effectiveFrom || FALLBACK_PRICING.effectiveFrom);
@@ -473,12 +404,31 @@ function aggregateSessions(archivedIds = []) {
 			let offPeakTokens = 0;
 			let flatTokens = 0;
 			const dayTokens = {};
+			const sessionByModel = {};
+			const dedupe = new Set();
+			{
+				const last = new Map();
+				for (const r of records) {
+					let key = null;
+					if (r.type === "assistant/message" && r.data?.usage) {
+						const t = r.data?.turn;
+						const s = r.data?.step;
+						if (t !== void 0 && s !== void 0) key = t + "|" + s;
+					} else if (r.type === "assistant/chunk" && r.data?.chunk?.type === "usage") {
+						const t = r.data?.turn;
+						const s = r.data?.step;
+						if (t !== void 0 && s !== void 0) key = t + "|" + s;
+					}
+					if (key !== null) last.set(key, r);
+				}
+				for (const r of last.values()) dedupe.add(r);
+			}
 			for (const r of records) {
 				if (r.type === "session" && header === null) { header = r; continue; }
-				if (r.type === "session/title" && title === null) title = r.data?.title ?? null;
-				if (r.type === "request/header" && model === null) {
-					model = r.data?.header?.config?.model ?? null;
-					effort = r.data?.header?.config?.reasoningEffort ?? null;
+				if (r.type === "session/title" && r.data?.title) title = r.data.title;
+				if (r.type === "request/header") {
+					model = r.data?.header?.config?.model ?? model;
+					effort = r.data?.header?.config?.reasoningEffort ?? effort;
 				}
 				const time = typeof r.time === "number" ? r.time : null;
 				if (time !== null) {
@@ -488,7 +438,7 @@ function aggregateSessions(archivedIds = []) {
 				let usage = null;
 				if (r.type === "assistant/message" && r.data?.usage) usage = r.data.usage;
 				else if (r.type === "assistant/chunk" && r.data?.chunk?.type === "usage") usage = r.data.chunk.usage;
-				if (usage && time !== null) {
+				if (usage && time !== null && dedupe.has(r)) {
 					const t = (usage.inputTokens ?? 0) + (usage.outputTokens ?? 0) + (usage.cacheReadTokens ?? 0);
 					const period = periodOfUsage(time, effectiveFromMs);
 					const dayKey = beijingDayKey(time);
@@ -496,8 +446,18 @@ function aggregateSessions(archivedIds = []) {
 					if (period === "peak") peakTokens += t;
 					else if (period === "offPeak") offPeakTokens += t;
 					else flatTokens += t;
-					dayTokens[dayKey] = dayTokens[dayKey] || { peak: 0, offPeak: 0, flat: 0 };
-					dayTokens[dayKey][period] += t;
+					const mkModel = model ?? "";
+					const b = bucketsFrom(usage);
+					dayTokens[dayKey] = dayTokens[dayKey] || {};
+					dayTokens[dayKey][mkModel] = dayTokens[dayKey][mkModel] || { flat: zeroBucket(), peak: zeroBucket(), offPeak: zeroBucket() };
+					dayTokens[dayKey][mkModel][period] = addBucket(dayTokens[dayKey][mkModel][period], b);
+					summary.byModel[mkModel] = summary.byModel[mkModel] || { flat: zeroBucket(), peak: zeroBucket(), offPeak: zeroBucket() };
+					summary.byModel[mkModel][period] = addBucket(summary.byModel[mkModel][period], b);
+					sessionByModel[mkModel] = sessionByModel[mkModel] || { flat: zeroBucket(), peak: zeroBucket(), offPeak: zeroBucket() };
+					sessionByModel[mkModel][period] = addBucket(sessionByModel[mkModel][period], b);
+					const mk = `${model ?? ""}|${effort ?? ""}`;
+					summary.modelEffort[mk] = summary.modelEffort[mk] || { tokens: 0 };
+					summary.modelEffort[mk].tokens += t;
 				}
 			}
 			summary.totalTokens += tokens;
@@ -505,21 +465,33 @@ function aggregateSessions(archivedIds = []) {
 			summary.offPeakTokens += offPeakTokens;
 			summary.flatTokens += flatTokens;
 			for (const [dayKey, d] of Object.entries(dayTokens)) {
-				summary.days[dayKey] = summary.days[dayKey] || { tokens: 0, peak: 0, offPeak: 0, flat: 0 };
-				const dayTotal = d.peak + d.offPeak + d.flat;
-				summary.days[dayKey].tokens += dayTotal;
-				summary.days[dayKey].peak += d.peak;
-				summary.days[dayKey].offPeak += d.offPeak;
-				summary.days[dayKey].flat += d.flat;
-				if (summary.days[dayKey].tokens > summary.dailyPeakTokens) summary.dailyPeakTokens = summary.days[dayKey].tokens;
+				summary.days[dayKey] = summary.days[dayKey] || { tokens: 0, peak: 0, offPeak: 0, flat: 0, byModel: {} };
+				const day = summary.days[dayKey];
+				const byModel = day.byModel;
+				const bucketTotal = (bucket) => bucket.uncachedInputTokens + bucket.outputTokens + bucket.cacheReadTokens;
+				let dayTotal = 0;
+				let dayPeak = 0;
+				let dayOff = 0;
+				let dayFlat = 0;
+				for (const [m, b] of Object.entries(d)) {
+					byModel[m] = byModel[m] || { flat: zeroBucket(), peak: zeroBucket(), offPeak: zeroBucket() };
+					byModel[m].flat = addBucket(byModel[m].flat, b.flat);
+					byModel[m].peak = addBucket(byModel[m].peak, b.peak);
+					byModel[m].offPeak = addBucket(byModel[m].offPeak, b.offPeak);
+					dayPeak += bucketTotal(b.peak);
+					dayOff += bucketTotal(b.offPeak);
+					dayFlat += bucketTotal(b.flat);
+					dayTotal += bucketTotal(b.peak) + bucketTotal(b.offPeak) + bucketTotal(b.flat);
+				}
+				day.tokens += dayTotal;
+				day.peak += dayPeak;
+				day.offPeak += dayOff;
+				day.flat += dayFlat;
+				if (day.tokens > summary.dailyPeakTokens) summary.dailyPeakTokens = day.tokens;
 			}
 			const duration = (lastTime ?? 0) - (firstTime ?? 0);
 			if (duration > summary.longestChatMs) summary.longestChatMs = duration;
-			if (model !== null) {
-				const key = `${model}|${effort ?? ""}`;
-				summary.modelEffort[key] = summary.modelEffort[key] || { tokens: 0 };
-				summary.modelEffort[key].tokens += tokens;
-			}
+
 			const sid = header?.id ?? sDir.replace(/^session-/, "");
 			summary.sessions.push({
 				id: sid,
@@ -527,6 +499,7 @@ function aggregateSessions(archivedIds = []) {
 				cwd: header?.cwd ?? wsDir,
 				tokens,
 				peakTokens,
+				byModel: sessionByModel,
 				createdAt: header?.createdAt ?? firstTime,
 				endedAt: lastTime,
 				archived: archivedSet.has(sid)
@@ -563,8 +536,48 @@ function aggregateSessions(archivedIds = []) {
 	return summary;
 }
 
-const usageCache = { data: null, at: 0 };
-const USAGE_CACHE_TTL_MS = 60000;
+const DEFAULT_MODEL = "deepseek-v4-pro";
+
+/** Compute spend (CNY/USD) from an aggregated usage summary, using the live pricing table. */
+function computeSpend(summary, currency = "CNY") {
+	const pricingSet =
+		(pricing.data.currencies && pricing.data.currencies[currency]) ||
+		pricing.data.currencies?.CNY ||
+		FALLBACK_PRICING.currencies.CNY;
+	const models = pricingSet.models || {};
+	const defaultModel = models[DEFAULT_MODEL] || { legacy: null, peak: { miss: 0, hit: 0, output: 0 }, offPeak: { miss: 0, hit: 0, output: 0 } };
+	const priceOf = (tokens, price) => (tokens || 0) * (price || 0) / 1e6;
+	const bucketCost = (b, mm) => {
+		if (!mm) return 0;
+		const cost = (bucket, price) => {
+			if (!price) return 0;
+			return priceOf(bucket.uncachedInputTokens, price.miss)
+				+ priceOf(bucket.cacheWriteTokens, price.miss)
+				+ priceOf(bucket.cacheReadTokens, price.hit)
+				+ priceOf(bucket.outputTokens, price.output);
+		};
+		return (mm.legacy ? cost(b.flat, mm.legacy) : 0) + cost(b.peak, mm.peak) + cost(b.offPeak, mm.offPeak);
+	};
+	let total = 0;
+	for (const [k, b] of Object.entries(summary.byModel || {})) {
+		const [m] = k.split("|");
+		total += bucketCost(b, models[m] || defaultModel);
+	}
+	const day = (summary.days || {})[beijingDayKey(Date.now())];
+	let today = null;
+	if (day) {
+		if (day.byModel) {
+			today = 0;
+			for (const [m, b] of Object.entries(day.byModel)) today += bucketCost(b, models[m] || defaultModel);
+		} else {
+			today = bucketCost(day, defaultModel);
+		}
+	}
+	return { total, today, currency };
+}
+
+const usageCache = { data: null, at: 0, currency: null };
+const USAGE_CACHE_TTL_MS = 30000;
 
 function tokenNameFile() {
 	return join(dshHome(), "deepseek-balance.json");
@@ -598,10 +611,6 @@ async function maskApiKey(ctx) {
 }
 
 function apply(ctx, config = {}) {
-	ctx.inject(["sessionProjections"], (projectionCtx) => {
-		projectionCtx.sessionProjections.register(tokenUsageByPeriodProjection);
-	});
-
 	const balanceHandler = async (req, res) => {
 		if (req.method !== "GET" && req.method !== "HEAD") {
 			json(res, 405, { error: "method not allowed" });
@@ -627,6 +636,7 @@ function apply(ctx, config = {}) {
 				json(res, upstream.status === 401 || upstream.status === 403 ? 401 : 502, { error: message });
 				return;
 			}
+			if (typeof body?.currency === "string" && body.currency.length > 0) usageCache.currency = body.currency;
 			json(res, 200, body);
 		} catch (error) {
 			json(res, 502, { error: error instanceof Error ? error.message : String(error) });
@@ -670,14 +680,52 @@ function apply(ctx, config = {}) {
 			try {
 				const ws = ctx.get("workspaceRegistry");
 				usageCache.data = aggregateSessions(ws?.archivedSessionIds ?? []);
+				usageCache.data.spend = computeSpend(usageCache.data, usageCache.currency || "CNY");
 				usageCache.at = Date.now();
 			} catch (error) {
 				if (ctx?.logger?.warn) ctx.logger.warn(`deepseek-balance: usage aggregation failed: ${error instanceof Error ? error.message : String(error)}`);
 			}
 		}
 		const key = await maskApiKey(ctx);
+		let payload = usageCache.data;
+		if (!payload) {
+			payload = aggregateSessions();
+			payload.spend = computeSpend(payload, usageCache.currency || "CNY");
+		}
+		let query = null;
+		try { query = new URL(req.url, "http://dsh.local").searchParams; } catch {}
+		const sessionId = query ? query.get("session") : null;
+		if (sessionId && sessionId.length > 0) {
+			const s = (payload.sessions || []).find((x) => x.id === sessionId);
+			if (s) {
+				json(res, 200, {
+					id: s.id,
+					title: s.title,
+					tokens: s.tokens,
+					spend: computeSpend({ byModel: s.byModel || {} }, usageCache.currency || "CNY"),
+					apiKeyPreview: key,
+					tokenName: resolveTokenName(config),
+					effectiveFrom: pricing.data.effectiveFrom,
+					fetchedAt: usageCache.at,
+					source: pricing.source
+				});
+				return;
+			}
+			json(res, 200, {
+				id: sessionId,
+				title: sessionId,
+				tokens: 0,
+				spend: { total: 0, today: null, currency: usageCache.currency || "CNY" },
+				apiKeyPreview: key,
+				tokenName: resolveTokenName(config),
+				effectiveFrom: pricing.data.effectiveFrom,
+				fetchedAt: usageCache.at,
+				source: pricing.source
+			});
+			return;
+		}
 		json(res, 200, {
-			...(usageCache.data || aggregateSessions()),
+			...payload,
 			apiKeyPreview: key,
 			tokenName: resolveTokenName(config),
 			effectiveFrom: pricing.data.effectiveFrom,
