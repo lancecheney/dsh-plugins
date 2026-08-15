@@ -6,7 +6,7 @@ window.__ModuleLoader__.load({
 		Object.defineProperty(exports, Symbol.toStringTag, { value: "Module" });
 		let react = require("react");
 
-		const css = ".Dbg1_root{display:inline-flex;align-items:center;gap:6px;height:32px;border:1px solid var(--dsw-alias-border-l2);border-radius:18px;padding:0 12px;font-family:var(--dsw-font-family);font-size:12px;line-height:18px;color:var(--dsw-alias-label-secondary);background:0 0;white-space:nowrap}.Dbg1_num{color:var(--dsw-alias-label-primary);font-variant-numeric:tabular-nums;font-weight:500}.Dbg1_sep{color:var(--dsw-alias-label-dimmed)}.Dbg1_chip{border-radius:9px;padding:0 8px;font-size:11px;line-height:18px;font-weight:600}.Dbg1_peak{color:var(--dsw-alias-state-warn-primary)}.Dbg1_offPeak{color:var(--dsw-alias-state-success-primary)}.Dbg1_dimmed{color:var(--dsw-alias-label-dimmed)}";
+		const css = ".Dbg1_root{display:inline-flex;align-items:center;gap:6px;height:32px;border:1px solid var(--dsw-alias-border-l2);border-radius:18px;padding:0 12px;font-family:var(--dsw-font-family);font-size:12px;line-height:18px;color:var(--dsw-alias-label-secondary);background:0 0;white-space:nowrap}.Dbg1_num{color:var(--dsw-alias-label-primary);font-variant-numeric:tabular-nums;font-weight:500}.Dbg1_sep{color:var(--dsw-alias-label-dimmed)}.Dbg1_chip{border-radius:9px;padding:0 8px;font-size:11px;line-height:18px;font-weight:600}.Dbg1_peak{color:var(--dsw-alias-state-warn-primary)}.Dbg1_offPeak{color:var(--dsw-alias-state-success-primary)}.Dbg1_dimmed{color:var(--dsw-alias-label-dimmed)}.Dbg1_plus{font-size:9px;line-height:1;vertical-align:super;color:var(--dsw-alias-state-warn-primary);font-weight:700}";
 		const tagId = "@lancecheney/dsh-deepseek-balance/BillingBadge.css";
 		if (typeof document !== "undefined" && document.querySelector("style[data-plugin-css=" + JSON.stringify(tagId) + "]") === null) {
 			const tag = document.createElement("style");
@@ -15,7 +15,7 @@ window.__ModuleLoader__.load({
 			tag.textContent = css;
 			document.head.appendChild(tag);
 		}
-		const cssModule = { root: "Dbg1_root", num: "Dbg1_num", sep: "Dbg1_sep", chip: "Dbg1_chip", peak: "Dbg1_peak", offPeak: "Dbg1_offPeak", dimmed: "Dbg1_dimmed" };
+		const cssModule = { root: "Dbg1_root", num: "Dbg1_num", sep: "Dbg1_sep", chip: "Dbg1_chip", peak: "Dbg1_peak", offPeak: "Dbg1_offPeak", dimmed: "Dbg1_dimmed", plus: "Dbg1_plus" };
 
 		/**
 		 * DeepSeek API peak/off-peak pricing (effective 2026-08-17, Beijing time).
@@ -148,6 +148,9 @@ window.__ModuleLoader__.load({
 			const balance = state.phase === "ok" ? firstBalance(state.data) : null;
 			const cost = usage !== undefined && usage !== null ? costOf(usage, p) : null;
 
+			// off → base price; high (default) → one +; max → two +.
+			const plus = reasoningEffort === "max" ? "++" : reasoningEffort === "off" ? "" : "+";
+
 			const tooltipParts = [
 				`${t("period.peak")}: 09:00–12:00, 14:00–18:00 (${t("time.beijing")})`,
 				`${t("period.offPeak")}: ${t("time.other")}`,
@@ -189,7 +192,9 @@ window.__ModuleLoader__.load({
 			segs.push(react.createElement("span", { key: "period", className: `${cssModule.chip} ${isPeak ? cssModule.peak : cssModule.offPeak}` },
 				isPeak ? t("period.peak") : t("period.offPeak")));
 			segs.push(sep("sep3"));
-			segs.push(react.createElement("span", { key: "price" }, t("price.outputPerM", { model: model.short, price: outputPrice })));
+			segs.push(react.createElement("span", { key: "price" },
+				t("price.outputPerM", { model: model.short, price: outputPrice }),
+				plus !== "" ? react.createElement("span", { className: cssModule.plus }, plus) : null));
 
 			return react.createElement("span", { className: cssModule.root, title: tooltip }, segs);
 		}
@@ -208,7 +213,7 @@ window.__ModuleLoader__.load({
 			"price.row": "命中¥{hit}/未命中¥{miss}/输出¥{output}",
 			"cost.estimate": "按当前时段价格估算",
 			"cost.breakdown": "输入(未命中) {miss} · 输入(命中) {hit} · 输出 {output} tokens",
-			"reasoning.note": "思考链(reasoning)按输出 token 计费，high/max 只增加输出量、不改变单价"
+			"reasoning.note": "思考链按输出 token 计费；价格段 + / ++ 表示 high / max 思考会额外增加输出量"
 		};
 		const en = {
 			"label.spent": "Spent",
@@ -223,7 +228,7 @@ window.__ModuleLoader__.load({
 			"price.row": "hit ¥{hit}/miss ¥{miss}/output ¥{output}",
 			"cost.estimate": "estimated at the current period's price",
 			"cost.breakdown": "input(miss) {miss} · input(hit) {hit} · output {output} tokens",
-			"reasoning.note": "Reasoning tokens are billed as output; high/max only increases output volume, not the unit price"
+			"reasoning.note": "Reasoning tokens are billed as output; + / ++ mark high / max effort which adds extra output"
 		};
 
 		const inject = ["slots", "locale"];
