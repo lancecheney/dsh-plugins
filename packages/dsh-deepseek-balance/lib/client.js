@@ -227,12 +227,19 @@ window.__ModuleLoader__.load({
 			const segs = [];
 			segs.push(react.createElement("span", { key: "spent" },
 				tr("label.spent"), " ",
-				react.createElement("span", { className: cssModule.num }, cost === null ? "—" : `${symbol}${fmtMoney(cost)}`)));
+				cost === null
+					? react.createElement("span", { className: cssModule.num }, "—")
+					: react.createElement("span", { className: cssModule.num },
+						react.createElement("span", { className: cssModule.unit }, symbol),
+						fmtMoney(cost))));
 			segs.push(sep("sep1"));
 			segs.push(react.createElement("span", { key: "balance" },
 				tr("label.balance"), " ",
-				react.createElement("span", { className: cssModule.num },
-					balanceRow !== null ? `${symbol}${fmtMoney(Number(balanceRow.total_balance))}` : (state.phase === "loading" ? "…" : tr("balance.unavailable")))));
+				balanceRow === null
+					? react.createElement("span", { className: cssModule.num }, state.phase === "loading" ? "…" : tr("balance.unavailable"))
+					: react.createElement("span", { className: cssModule.num },
+						react.createElement("span", { className: cssModule.unit }, symbol),
+						fmtMoney(Number(balanceRow.total_balance)))));
 			segs.push(sep("sep2"));
 			segs.push(react.createElement("span", { key: "period", className: `${cssModule.chip} ${periodClass}` }, periodLabel));
 			segs.push(sep("sep3"));
