@@ -1,27 +1,8 @@
 {
-  "name": "@deepseek-ai/dsh-deepseek-balance",
-  "description": "Session-header DeepSeek API balance and peak/off-peak pricing indicator",
-  "version": "0.1.0",
+  "name": "dsh-plugins",
+  "version": "0.0.0",
+  "private": true,
+  "description": "lancecheney's collection of DeepSeek Harness (DSH) plugins",
   "type": "module",
-  "main": "lib/index.js",
-  "exports": {
-    ".": "./lib/index.js",
-    "./client": "./lib/client.js",
-    "./package.json": "./package.json"
-  },
-  "dsh": {
-    "client": {
-      "inject": [
-        "@deepseek-ai/dsh-client-locale",
-        "@deepseek-ai/dsh-client-runtime",
-        "@deepseek-ai/dsh-client-ui-conversation"
-      ],
-      "platform": "web"
-    }
-  },
-  "license": "MIT",
-  "dependencies": {
-    "@deepseek-ai/dsh-credentials": "^0.1.0-rc.6",
-    "@deepseek-ai/dsh-settings": "^0.1.0-rc.6"
-  }
+  "license": "MIT"
 }
