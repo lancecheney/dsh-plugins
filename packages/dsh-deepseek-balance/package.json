@@ -1,6 +1,6 @@
 {
   "name": "@lancecheney/dsh-deepseek-balance",
-  "description": "Session-header DeepSeek API balance and peak/off-peak pricing indicator",
+  "description": "Session-header DeepSeek API balance, per-conversation spend, and peak/off-peak pricing indicator",
   "version": "0.1.0",
   "type": "module",
   "main": "lib/index.js",
@@ -10,12 +10,7 @@
     "./cordis.patch.yml": "./cordis.patch.yml",
     "./package.json": "./package.json"
   },
-  "files": [
-    "lib",
-    "cordis.patch.yml",
-    "README.md",
-    "README.zh.md"
-  ],
+  "files": ["lib", "cordis.patch.yml", "README.md", "README.zh.md"],
   "dsh": {
     "bundle": {
       "patch": "./cordis.patch.yml"
@@ -31,7 +26,15 @@
   },
   "license": "MIT",
   "dependencies": {
+    "zod": "^4.4.3"
+  },
+  "peerDependencies": {
+    "@deepseek-ai/cordis": "^4.0.1",
     "@deepseek-ai/dsh-credentials": "^0.1.0-rc.6",
-    "@deepseek-ai/dsh-settings": "^0.1.0-rc.6"
+    "@deepseek-ai/dsh-settings": "^0.1.0-rc.6",
+    "@deepseek-ai/dsh-client-locale": "^0.1.0-rc.6",
+    "@deepseek-ai/dsh-client-runtime": "^0.1.0-rc.6",
+    "@deepseek-ai/dsh-client-ui-conversation": "^0.1.0-rc.6",
+    "react": "^18.2.0"
   }
 }
