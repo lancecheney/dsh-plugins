@@ -6,7 +6,7 @@ window.__ModuleLoader__.load({
 		Object.defineProperty(exports, Symbol.toStringTag, { value: "Module" });
 		let react = require("react");
 
-		const css = ".Dbg1_root{display:inline-flex;align-items:center;gap:6px;height:32px;border:1px solid var(--dsw-alias-border-l2);border-radius:18px;padding:0 12px;font-family:var(--dsw-font-family);font-size:12px;line-height:18px;color:var(--dsw-alias-label-secondary);background:0 0;white-space:nowrap;text-decoration:none;cursor:pointer}.Dbg1_root:hover{background:var(--dsw-alias-interactive-bg-hover)}.Dbg1_num{color:var(--dsw-alias-label-primary);font-variant-numeric:tabular-nums;font-weight:500}.Dbg1_sep{color:var(--dsw-alias-label-dimmed)}.Dbg1_chip{border-radius:9px;padding:0 8px;font-size:11px;line-height:18px;font-weight:600}.Dbg1_peak{color:var(--dsw-alias-state-warn-primary)}.Dbg1_offPeak{color:var(--dsw-alias-state-success-primary)}.Dbg1_legacy{color:var(--dsw-alias-label-tertiary)}.Dbg1_dimmed{color:var(--dsw-alias-label-dimmed)}.Dbg1_plus{font-size:9px;line-height:1;vertical-align:super;color:var(--dsw-alias-state-warn-primary);font-weight:700}.Dbg1_unit{font-size:10px}";
+		const css = ".Dbg1_root{display:inline-flex;align-items:center;gap:6px;height:32px;border:1px solid var(--dsw-alias-border-l2);border-radius:18px;padding:0 12px;font-family:var(--dsw-font-family);font-size:12px;line-height:18px;color:var(--dsw-alias-label-secondary);background:0 0;white-space:nowrap;text-decoration:none;cursor:pointer}.Dbg1_root:hover{background:var(--dsw-alias-interactive-bg-hover)}.Dbg1_num{color:var(--dsw-alias-label-primary);font-variant-numeric:tabular-nums;font-weight:500}.Dbg1_sep{color:var(--dsw-alias-label-dimmed)}.Dbg1_chip{border-radius:9px;padding:0 6px;font-size:11px;line-height:18px;font-weight:600}.Dbg1_peak{color:var(--dsw-alias-state-warn-primary)}.Dbg1_offPeak{color:var(--dsw-alias-state-success-primary)}.Dbg1_legacy{color:var(--dsw-alias-label-tertiary)}.Dbg1_dimmed{color:var(--dsw-alias-label-dimmed)}.Dbg1_plus{font-size:9px;line-height:1;vertical-align:super;color:var(--dsw-alias-state-warn-primary);font-weight:700}.Dbg1_unit{font-size:10px}";
 		const tagId = "@lancecheney/dsh-deepseek-balance/BillingBadge.css";
 		if (typeof document !== "undefined" && document.querySelector("style[data-plugin-css=" + JSON.stringify(tagId) + "]") === null) {
 			const tag = document.createElement("style");
@@ -187,7 +187,6 @@ window.__ModuleLoader__.load({
 			const outputPrice = fmtPrice(p.output);
 			const cost = usage !== undefined && usage !== null ? costOf(usage, p) : null;
 
-			const plus = reasoningEffort === "max" ? "++" : reasoningEffort === "off" ? "" : "+";
 
 			const periodClass = isLegacy ? cssModule.legacy : isPeak ? cssModule.peak : cssModule.offPeak;
 			const periodLabel = isLegacy ? tr("period.legacy") : isPeak ? tr("period.peak") : tr("period.offPeak");
@@ -247,7 +246,6 @@ window.__ModuleLoader__.load({
 				react.createElement("span", { className: cssModule.unit }, symbol),
 				outputPrice,
 				react.createElement("span", { className: cssModule.unit }, tr("price.perM")),
-				plus !== "" ? react.createElement("span", { className: cssModule.plus }, plus) : null,
 				` ${tr("price.unit")}`));
 
 			return react.createElement("a", { className: cssModule.root, title: tooltip, href: "https://platform.deepseek.com/usage", target: "_blank", rel: "noreferrer noopener" }, segs);
@@ -270,7 +268,7 @@ window.__ModuleLoader__.load({
 			"price.row": "命中{sym}{hit}/未命中{sym}{miss}/输出{sym}{output}",
 			"cost.estimate": "按当前时段价格估算",
 			"cost.breakdown": "输入(未命中) {miss} · 输入(命中) {hit} · 输出 {output} tokens",
-			"reasoning.note": "思考链按输出 token 计费；+ / ++ 表示 high / max 思考会额外增加输出量"
+			"reasoning.note": "思考链按输出 token 计费，high / max 思考会额外增加输出量"
 		};
 		const en = {
 			"label.spent": "Spent",
@@ -288,7 +286,7 @@ window.__ModuleLoader__.load({
 			"price.row": "hit {sym}{hit}/miss {sym}{miss}/output {sym}{output}",
 			"cost.estimate": "estimated at the current period's price",
 			"cost.breakdown": "input(miss) {miss} · input(hit) {hit} · output {output} tokens",
-			"reasoning.note": "Reasoning tokens are billed as output; + / ++ mark high / max effort which adds extra output"
+			"reasoning.note": "Reasoning tokens are billed as output; high / max effort adds extra output"
 		};
 
 		const inject = ["slots", "locale"];
