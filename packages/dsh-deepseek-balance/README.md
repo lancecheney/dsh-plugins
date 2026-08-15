@@ -25,13 +25,13 @@ Pricing follows DeepSeek's official peak/off-peak pricing effective **2026-08-17
 Recommended — `dsh plugin` (installs as a profile bundle):
 
 ```sh
-dsh plugin --profile web add @deepseek-ai/dsh-deepseek-balance
+dsh plugin --profile web add @lancecheney/dsh-deepseek-balance
 ```
 
 then restart `dsh web` and refresh the page.
 
 Manual alternative: copy this package into the profile's module directory
-(e.g. `~/.dsh/profiles/node_modules/@deepseek-ai/dsh-deepseek-balance/`) and
+(e.g. `~/.dsh/profiles/node_modules/@lancecheney/dsh-deepseek-balance/`) and
 register it in the profile's `cordis.patch.yml`.
 
 Requires a `DEEPSEEK_API_KEY` configured through the harness credential store (or the `DEEPSEEK_API_KEY` environment variable).

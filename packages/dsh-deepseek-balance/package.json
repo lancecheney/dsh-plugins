@@ -1,5 +1,5 @@
 {
-  "name": "@deepseek-ai/dsh-deepseek-balance",
+  "name": "@lancecheney/dsh-deepseek-balance",
   "description": "Session-header DeepSeek API balance and peak/off-peak pricing indicator",
   "version": "0.1.0",
   "type": "module",

@@ -1,5 +1,5 @@
 window.__ModuleLoader__.load({
-	id: "@deepseek-ai/dsh-deepseek-balance",
+	id: "@lancecheney/dsh-deepseek-balance",
 	factory: (require) => {
 		var module = { exports: {} };
 		var exports = module.exports;
@@ -7,10 +7,10 @@ window.__ModuleLoader__.load({
 		let react = require("react");
 
 		const css = ".Dbg1_root{display:inline-flex;align-items:center;gap:6px;height:32px;border:1px solid var(--dsw-alias-border-l2);border-radius:18px;padding:0 12px;font-family:var(--dsw-font-family);font-size:12px;line-height:18px;color:var(--dsw-alias-label-secondary);background:0 0;white-space:nowrap}.Dbg1_num{color:var(--dsw-alias-label-primary);font-variant-numeric:tabular-nums;font-weight:500}.Dbg1_sep{color:var(--dsw-alias-label-dimmed)}.Dbg1_chip{border-radius:9px;padding:0 8px;font-size:11px;line-height:18px;font-weight:600}.Dbg1_peak{color:var(--dsw-alias-state-warn-primary)}.Dbg1_offPeak{color:var(--dsw-alias-state-success-primary)}.Dbg1_dimmed{color:var(--dsw-alias-label-dimmed)}";
-		const tagId = "@deepseek-ai/dsh-deepseek-balance/BillingBadge.css";
+		const tagId = "@lancecheney/dsh-deepseek-balance/BillingBadge.css";
 		if (typeof document !== "undefined" && document.querySelector("style[data-plugin-css=" + JSON.stringify(tagId) + "]") === null) {
 			const tag = document.createElement("style");
-			tag.dataset.plugin = "@deepseek-ai/dsh-deepseek-balance";
+			tag.dataset.plugin = "@lancecheney/dsh-deepseek-balance";
 			tag.dataset.pluginCss = tagId;
 			tag.textContent = css;
 			document.head.appendChild(tag);

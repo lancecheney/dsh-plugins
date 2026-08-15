@@ -2,7 +2,7 @@ import { credentialRef } from "@deepseek-ai/dsh-credentials";
 import { settingsNamespace } from "@deepseek-ai/dsh-settings";
 
 /**
- * @deepseek-ai/dsh-deepseek-balance — host half: exposes a same-origin
+ * @lancecheney/dsh-deepseek-balance — host half: exposes a same-origin
  * `/api/deepseek-balance` route that proxies the DeepSeek
  * `GET /user/balance` endpoint using the same credential + base-URL facts the
  * llm-deepseek adapter uses, so the browser never sees the API key.
