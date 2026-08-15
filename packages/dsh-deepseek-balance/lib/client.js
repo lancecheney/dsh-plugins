@@ -193,8 +193,9 @@ window.__ModuleLoader__.load({
 				isPeak ? t("period.peak") : t("period.offPeak")));
 			segs.push(sep("sep3"));
 			segs.push(react.createElement("span", { key: "price" },
-				t("price.outputPerM", { model: model.short, price: outputPrice }),
-				plus !== "" ? react.createElement("span", { className: cssModule.plus }, plus) : null));
+				`¥${outputPrice}`,
+				plus !== "" ? react.createElement("span", { className: cssModule.plus }, plus) : null,
+				t("price.suffix")));
 
 			return react.createElement("span", { className: cssModule.root, title: tooltip }, segs);
 		}
@@ -209,7 +210,7 @@ window.__ModuleLoader__.load({
 			"time.beijing": "北京时间",
 			"time.other": "其余时段",
 			"balance.unavailable": "余额不可用",
-			"price.outputPerM": "{model} ¥{price}/M 输出",
+			"price.suffix": "/M 输出",
 			"price.row": "命中¥{hit}/未命中¥{miss}/输出¥{output}",
 			"cost.estimate": "按当前时段价格估算",
 			"cost.breakdown": "输入(未命中) {miss} · 输入(命中) {hit} · 输出 {output} tokens",
@@ -224,7 +225,7 @@ window.__ModuleLoader__.load({
 			"time.beijing": "Beijing time",
 			"time.other": "all other hours",
 			"balance.unavailable": "balance unavailable",
-			"price.outputPerM": "{model} ¥{price}/M output",
+			"price.suffix": "/M output",
 			"price.row": "hit ¥{hit}/miss ¥{miss}/output ¥{output}",
 			"cost.estimate": "estimated at the current period's price",
 			"cost.breakdown": "input(miss) {miss} · input(hit) {hit} · output {output} tokens",
