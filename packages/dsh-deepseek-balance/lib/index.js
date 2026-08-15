@@ -1,7 +1,7 @@
 import { credentialRef } from "@deepseek-ai/dsh-credentials";
 import { settingsNamespace } from "@deepseek-ai/dsh-settings";
 import { z } from "zod";
-import { existsSync, readFileSync, readdirSync } from "node:fs";
+import { existsSync, mkdirSync, readFileSync, readdirSync, writeFileSync } from "node:fs";
 import { homedir } from "node:os";
 import { join } from "node:path";
 import { zstdDecompressSync } from "node:zlib";
@@ -16,7 +16,7 @@ import { zstdDecompressSync } from "node:zlib";
 const name = "deepseek-balance";
 const inject = ["webServer", "credentials", "settings"];
 const Config = z.object({
-	tokenName: z.string().default("DeepSeek")
+	tokenName: z.string().default("API key")
 });
 
 const DEFAULT_BASE_URL = "https://api.deepseek.com";
@@ -566,6 +566,28 @@ function aggregateSessions(archivedIds = []) {
 const usageCache = { data: null, at: 0 };
 const USAGE_CACHE_TTL_MS = 60000;
 
+function tokenNameFile() {
+	return join(dshHome(), "deepseek-balance.json");
+}
+
+function readTokenName() {
+	try {
+		const p = tokenNameFile();
+		if (!existsSync(p)) return null;
+		const d = JSON.parse(readFileSync(p, "utf8"));
+		return typeof d.tokenName === "string" && d.tokenName.trim() ? d.tokenName.trim() : null;
+	} catch { return null; }
+}
+
+function writeTokenName(name) {
+	try { mkdirSync(dshHome(), { recursive: true }); } catch {}
+	writeFileSync(tokenNameFile(), JSON.stringify({ tokenName: name }), "utf8");
+}
+
+function resolveTokenName(config) {
+	return readTokenName() || config.tokenName || "API key";
+}
+
 async function maskApiKey(ctx) {
 	try {
 		const { apiKey } = await resolveDeepSeekFacts(ctx);
@@ -657,7 +679,7 @@ function apply(ctx, config = {}) {
 		json(res, 200, {
 			...(usageCache.data || aggregateSessions()),
 			apiKeyPreview: key,
-			tokenName: config.tokenName || "DeepSeek",
+			tokenName: resolveTokenName(config),
 			effectiveFrom: pricing.data.effectiveFrom,
 			fetchedAt: usageCache.at,
 			source: pricing.source
@@ -665,6 +687,35 @@ function apply(ctx, config = {}) {
 	};
 
 	ctx.effect(() => ctx.webServer.register({ kind: "exact", path: "/api/deepseek-usage", handler: usageHandler }), "deepseek-balance: /api/deepseek-usage route");
+
+	const tokenNameHandler = async (req, res) => {
+		if (!isTrustedRead(req)) {
+			json(res, 403, { error: "forbidden" });
+			return;
+		}
+		if (req.method === "GET" || req.method === "HEAD") {
+			json(res, 200, { tokenName: resolveTokenName(config) });
+			return;
+		}
+		if (req.method === "POST") {
+			let raw = "";
+			try {
+				const chunks = [];
+				for await (const c of req) chunks.push(c);
+				raw = Buffer.concat(chunks).toString("utf8");
+				const body = raw ? JSON.parse(raw) : {};
+				const name = typeof body.tokenName === "string" && body.tokenName.trim() ? body.tokenName.trim().slice(0, 64) : "API key";
+				writeTokenName(name);
+				json(res, 200, { tokenName: name });
+			} catch (error) {
+				json(res, 400, { error: error instanceof Error ? error.message : String(error) });
+			}
+			return;
+		}
+		json(res, 405, { error: "method not allowed" });
+	};
+
+	ctx.effect(() => ctx.webServer.register({ kind: "exact", path: "/api/deepseek-balance/token-name", handler: tokenNameHandler }), "deepseek-balance: /api/deepseek-balance/token-name route");
 
 	ctx.effect(() => {
 		refreshPricing(ctx).catch(() => {});
