@@ -6,7 +6,7 @@ window.__ModuleLoader__.load({
 		Object.defineProperty(exports, Symbol.toStringTag, { value: "Module" });
 		let react = require("react");
 
-		const css = ".Dbg1_root{display:inline-flex;align-items:center;gap:6px;height:32px;border:1px solid var(--dsw-alias-border-l2);border-radius:18px;padding:0 12px;font-family:var(--dsw-font-family);font-size:12px;line-height:18px;color:var(--dsw-alias-label-secondary);background:0 0;white-space:nowrap}.Dbg1_num{color:var(--dsw-alias-label-primary);font-variant-numeric:tabular-nums;font-weight:500}.Dbg1_sep{color:var(--dsw-alias-label-dimmed)}.Dbg1_chip{border-radius:9px;padding:0 8px;font-size:11px;line-height:18px;font-weight:600}.Dbg1_peak{color:var(--dsw-alias-state-warn-primary)}.Dbg1_offPeak{color:var(--dsw-alias-state-success-primary)}.Dbg1_dimmed{color:var(--dsw-alias-label-dimmed)}.Dbg1_plus{font-size:9px;line-height:1;vertical-align:super;color:var(--dsw-alias-state-warn-primary);font-weight:700}";
+		const css = ".Dbg1_root{display:inline-flex;align-items:center;gap:6px;height:32px;border:1px solid var(--dsw-alias-border-l2);border-radius:18px;padding:0 12px;font-family:var(--dsw-font-family);font-size:12px;line-height:18px;color:var(--dsw-alias-label-secondary);background:0 0;white-space:nowrap}.Dbg1_num{color:var(--dsw-alias-label-primary);font-variant-numeric:tabular-nums;font-weight:500}.Dbg1_sep{color:var(--dsw-alias-label-dimmed)}.Dbg1_chip{border-radius:9px;padding:0 8px;font-size:11px;line-height:18px;font-weight:600}.Dbg1_peak{color:var(--dsw-alias-state-warn-primary)}.Dbg1_offPeak{color:var(--dsw-alias-state-success-primary)}.Dbg1_legacy{color:var(--dsw-alias-label-tertiary)}.Dbg1_dimmed{color:var(--dsw-alias-label-dimmed)}.Dbg1_plus{font-size:9px;line-height:1;vertical-align:super;color:var(--dsw-alias-state-warn-primary);font-weight:700}";
 		const tagId = "@lancecheney/dsh-deepseek-balance/BillingBadge.css";
 		if (typeof document !== "undefined" && document.querySelector("style[data-plugin-css=" + JSON.stringify(tagId) + "]") === null) {
 			const tag = document.createElement("style");
@@ -15,25 +15,27 @@ window.__ModuleLoader__.load({
 			tag.textContent = css;
 			document.head.appendChild(tag);
 		}
-		const cssModule = { root: "Dbg1_root", num: "Dbg1_num", sep: "Dbg1_sep", chip: "Dbg1_chip", peak: "Dbg1_peak", offPeak: "Dbg1_offPeak", dimmed: "Dbg1_dimmed", plus: "Dbg1_plus" };
+		const cssModule = { root: "Dbg1_root", num: "Dbg1_num", sep: "Dbg1_sep", chip: "Dbg1_chip", peak: "Dbg1_peak", offPeak: "Dbg1_offPeak", legacy: "Dbg1_legacy", dimmed: "Dbg1_dimmed", plus: "Dbg1_plus" };
 
-		/**
-		 * DeepSeek API peak/off-peak pricing (effective 2026-08-17, Beijing time).
-		 * Peak: 09:00-12:00 and 14:00-18:00; everything else is off-peak.
-		 * Values are CNY per 1M tokens. Reasoning tokens are billed as output.
-		 */
-		const MODELS = {
-			"deepseek-v4-pro": {
-				label: "DeepSeek-V4-Pro",
-				short: "Pro",
-				peak: { hit: 0.30, miss: 9.0, output: 27.0 },
-				offPeak: { hit: 0.15, miss: 4.5, output: 13.5 }
-			},
-			"deepseek-v4-flash": {
-				label: "DeepSeek-V4-Flash",
-				short: "Flash",
-				peak: { hit: 0.10, miss: 3.0, output: 9.0 },
-				offPeak: { hit: 0.05, miss: 1.5, output: 4.5 }
+		const MODEL_META = {
+			"deepseek-v4-pro": { label: "DeepSeek-V4-Pro" },
+			"deepseek-v4-flash": { label: "DeepSeek-V4-Flash" }
+		};
+
+		/** Last-known-good prices, used only while the host pricing fetch is unavailable. */
+		const FALLBACK_PRICING = {
+			effectiveFrom: "2026-08-17T00:00:00+08:00",
+			models: {
+				"deepseek-v4-pro": {
+					legacy: { hit: 0.025, miss: 3.0, output: 6.0 },
+					peak: { hit: 0.30, miss: 9.0, output: 27.0 },
+					offPeak: { hit: 0.15, miss: 4.5, output: 13.5 }
+				},
+				"deepseek-v4-flash": {
+					legacy: { hit: 0.02, miss: 1.0, output: 2.0 },
+					peak: { hit: 0.10, miss: 3.0, output: 9.0 },
+					offPeak: { hit: 0.05, miss: 1.5, output: 4.5 }
+				}
 			}
 		};
 		const DEFAULT_MODEL = "deepseek-v4-pro";
@@ -60,10 +62,12 @@ window.__ModuleLoader__.load({
 			return hour + minute / 60;
 		}
 
-		function periodFor(now) {
+		/** legacy (pre effective date) → flat price; otherwise peak/off-peak by Beijing time. */
+		function periodFor(now, effectiveFrom) {
+			const eff = Date.parse(effectiveFrom);
+			if (Number.isFinite(eff) && now.getTime() < eff) return "legacy";
 			const h = beijingDecimalHour(now);
-			const peak = (h >= 9 && h < 12) || (h >= 14 && h < 18);
-			return peak ? "peak" : "offPeak";
+			return (h >= 9 && h < 12) || (h >= 14 && h < 18) ? "peak" : "offPeak";
 		}
 
 		/** Prefer the CNY balance row; fall back to the first row. */
@@ -87,7 +91,7 @@ window.__ModuleLoader__.load({
 			return n.toFixed(2);
 		}
 
-		/** Estimated cost (CNY) for a session's token-usage projection under one period's prices. */
+		/** Estimated cost (CNY) for a session's token-usage projection under one price set. */
 		function costOf(usage, p) {
 			const miss = (usage.uncachedInputTokens ?? 0) + (usage.cacheWriteTokens ?? 0);
 			const hit = usage.cacheReadTokens ?? 0;
@@ -109,17 +113,19 @@ window.__ModuleLoader__.load({
 				let timer;
 				const load = async () => {
 					try {
-						const res = await fetch("/api/deepseek-balance", {
-							headers: { accept: "application/json" },
-							cache: "no-store"
-						});
-						const data = await res.json().catch(() => ({}));
+						const [balanceRes, pricingRes] = await Promise.all([
+							fetch("/api/deepseek-balance", { headers: { accept: "application/json" }, cache: "no-store" }),
+							fetch("/api/deepseek-pricing", { headers: { accept: "application/json" }, cache: "no-store" })
+						]);
+						const balanceData = await balanceRes.json().catch(() => ({}));
+						const pricingData = await pricingRes.json().catch(() => null);
 						if (!alive) return;
-						if (!res.ok) {
-							setState({ phase: "error", message: data.error || `HTTP ${res.status}` });
-							return;
-						}
-						setState({ phase: "ok", data });
+						setState({
+							phase: "ok",
+							balance: balanceRes.ok ? balanceData : null,
+							balanceError: balanceRes.ok ? null : (balanceData.error || `HTTP ${balanceRes.status}`),
+							pricing: pricingData && pricingRes.ok && pricingData.models ? pricingData : FALLBACK_PRICING
+						});
 					} catch (error) {
 						if (alive) setState({ phase: "error", message: error instanceof Error ? error.message : String(error) });
 					}
@@ -132,6 +138,9 @@ window.__ModuleLoader__.load({
 				};
 			}, []);
 
+			const pricing = state.pricing || FALLBACK_PRICING;
+			const effectiveFrom = pricing.effectiveFrom || FALLBACK_PRICING.effectiveFrom;
+
 			const modelState = react.useSyncExternalStore(
 				directory ? (fn) => directory.subscribe(fn) : noopSubscribe,
 				() => (directory ? directory.getSnapshot() : null)
@@ -140,24 +149,28 @@ window.__ModuleLoader__.load({
 			const modelId = currentSelection && currentSelection.model ? currentSelection.model : DEFAULT_MODEL;
 			const reasoningEffort = currentSelection ? currentSelection.reasoningEffort : void 0;
 
-			const period = periodFor(new Date());
+			const period = periodFor(new Date(), effectiveFrom);
 			const isPeak = period === "peak";
-			const model = MODELS[modelId] || MODELS[DEFAULT_MODEL];
-			const p = model[period];
+			const isLegacy = period === "legacy";
+			const model = (pricing.models && pricing.models[modelId]) || pricing.models[DEFAULT_MODEL] || FALLBACK_PRICING.models[DEFAULT_MODEL];
+			const p = (period === "peak" ? model.peak : period === "offPeak" ? model.offPeak : model.legacy) || model.peak;
 			const outputPrice = fmtPrice(p.output);
-			const balance = state.phase === "ok" ? firstBalance(state.data) : null;
+			const balance = state.phase === "ok" && state.balance ? firstBalance(state.balance) : null;
 			const cost = usage !== undefined && usage !== null ? costOf(usage, p) : null;
 
 			// off → base price; high (default) → one +; max → two +.
 			const plus = reasoningEffort === "max" ? "++" : reasoningEffort === "off" ? "" : "+";
 
+			const periodClass = isLegacy ? cssModule.legacy : isPeak ? cssModule.peak : cssModule.offPeak;
+			const periodLabel = isLegacy ? t("period.legacy") : isPeak ? t("period.peak") : t("period.offPeak");
+
 			const tooltipParts = [
-				`${t("period.peak")}: 09:00–12:00, 14:00–18:00 (${t("time.beijing")})`,
-				`${t("period.offPeak")}: ${t("time.other")}`,
+				isLegacy ? t("period.legacyNote") : `${t("period.peak")}: 09:00–12:00, 14:00–18:00 (${t("time.beijing")})`,
+				isLegacy ? "" : `${t("period.offPeak")}: ${t("time.other")}`,
 				"",
-				`${t("label.model")}: ${model.label}${reasoningEffort ? ` · ${reasoningEffort}` : ""}`,
+				`${t("label.model")}: ${(MODEL_META[modelId] || {}).label || modelId}${reasoningEffort ? ` · ${reasoningEffort}` : ""}`,
 				t("reasoning.note")
-			];
+			].filter((line) => line !== "");
 			if (cost !== null && usage) {
 				tooltipParts.push(
 					"",
@@ -170,9 +183,13 @@ window.__ModuleLoader__.load({
 				);
 			}
 			tooltipParts.push("");
-			for (const [, info] of Object.entries(MODELS)) {
+			for (const [id, info] of Object.entries(pricing.models)) {
+				const meta = MODEL_META[id] || {};
+				const row = t("price.row", { hit: fmtPrice(info.peak.hit), miss: fmtPrice(info.peak.miss), output: fmtPrice(info.peak.output) });
+				const off = t("price.row", { hit: fmtPrice(info.offPeak.hit), miss: fmtPrice(info.offPeak.miss), output: fmtPrice(info.offPeak.output) });
+				const legacy = info.legacy ? t("price.row", { hit: fmtPrice(info.legacy.hit), miss: fmtPrice(info.legacy.miss), output: fmtPrice(info.legacy.output) }) : null;
 				tooltipParts.push(
-					`${info.label} — ${t("period.peak")}: ${t("price.row", { hit: fmtPrice(info.peak.hit), miss: fmtPrice(info.peak.miss), output: fmtPrice(info.peak.output) })} / ${t("period.offPeak")}: ${t("price.row", { hit: fmtPrice(info.offPeak.hit), miss: fmtPrice(info.offPeak.miss), output: fmtPrice(info.offPeak.output) })}`
+					`${meta.label || id} — ${t("period.peak")}: ${row} / ${t("period.offPeak")}: ${off}${legacy ? ` / ${t("period.legacy")}: ${legacy}` : ""}`
 				);
 			}
 			const tooltip = tooltipParts.join("\n");
@@ -189,8 +206,7 @@ window.__ModuleLoader__.load({
 				react.createElement("span", { className: cssModule.num },
 					balance !== null ? `¥${fmtYuan(Number(balance.total_balance))}` : (state.phase === "loading" ? "…" : t("balance.unavailable")))));
 			segs.push(sep("sep2"));
-			segs.push(react.createElement("span", { key: "period", className: `${cssModule.chip} ${isPeak ? cssModule.peak : cssModule.offPeak}` },
-				isPeak ? t("period.peak") : t("period.offPeak")));
+			segs.push(react.createElement("span", { key: "period", className: `${cssModule.chip} ${periodClass}` }, periodLabel));
 			segs.push(sep("sep3"));
 			segs.push(react.createElement("span", { key: "price" },
 				`¥${outputPrice}`,
@@ -207,6 +223,8 @@ window.__ModuleLoader__.load({
 			"label.model": "模型",
 			"period.peak": "高峰",
 			"period.offPeak": "空闲",
+			"period.legacy": "平价",
+			"period.legacyNote": "当前为调价前平价（8/17 前）",
 			"time.beijing": "北京时间",
 			"time.other": "其余时段",
 			"balance.unavailable": "余额不可用",
@@ -222,6 +240,8 @@ window.__ModuleLoader__.load({
 			"label.model": "Model",
 			"period.peak": "Peak",
 			"period.offPeak": "Off-peak",
+			"period.legacy": "Flat",
+			"period.legacyNote": "Pre-change flat pricing (before Aug 17)",
 			"time.beijing": "Beijing time",
 			"time.other": "all other hours",
 			"balance.unavailable": "balance unavailable",
