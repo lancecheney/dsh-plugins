@@ -45,6 +45,10 @@ dsh plugin --profile web add @lancecheney/dsh-deepseek-balance
 
 需要已在 harness 凭据存储中配置 `DEEPSEEK_API_KEY`（或设置 `DEEPSEEK_API_KEY` 环境变量）。
 
+## 安全
+
+余额接口走服务端代理：浏览器只请求本地 `/api/deepseek-balance` 路由，由 host 半区转发到 DeepSeek。API Key 从 harness 凭据存储（或 `DEEPSEEK_API_KEY` 环境变量）解析，仅在服务端调用 DeepSeek 时放入 `Authorization: Bearer ...` 请求头，绝不进入浏览器。界面只显示脱敏后的预览（`sk-8ce0e*****d899`），方便确认当前用的是哪个密钥。
+
 ## 说明
 
 - **消耗** 是估算值：会话内所有 token 都按当前时段价格计算，实际扣费以 DeepSeek 服务端为准。

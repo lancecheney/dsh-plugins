@@ -45,6 +45,10 @@ then restart `dsh web` and refresh the page.
 
 Requires a `DEEPSEEK_API_KEY` configured through the harness credential store (or the `DEEPSEEK_API_KEY` environment variable).
 
+## Security
+
+The balance is proxied server-side: the browser only ever talks to the local `/api/deepseek-balance` route, which the host half forwards to DeepSeek. Your API key is resolved from the harness credential store (or the `DEEPSEEK_API_KEY` environment variable) and is only used server-side in the `Authorization: Bearer ...` header when calling DeepSeek — it never reaches the browser. The badge only shows a masked preview (`sk-8ce0e*****d899`) so you can tell which key is in use.
+
 ## Notes
 
 - The **Spent** figure is an estimate: all tokens in a session are priced at the current period's rate. Real billing is computed by DeepSeek.
