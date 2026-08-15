@@ -425,7 +425,8 @@ function readSessionRecords(path) {
 	return records;
 }
 
-function aggregateSessions() {
+function aggregateSessions(archivedIds = []) {
+	const archivedSet = new Set(archivedIds);
 	const root = join(dshHome(), "sessions");
 	const summary = {
 		totalTokens: 0,
@@ -516,14 +517,16 @@ function aggregateSessions() {
 				summary.modelEffort[key] = summary.modelEffort[key] || { tokens: 0 };
 				summary.modelEffort[key].tokens += tokens;
 			}
+			const sid = header?.id ?? sDir.replace(/^session-/, "");
 			summary.sessions.push({
-				id: header?.id ?? sDir.replace(/^session-/, ""),
+				id: sid,
 				title: title ?? header?.id ?? sDir,
 				cwd: header?.cwd ?? wsDir,
 				tokens,
 				peakTokens,
 				createdAt: header?.createdAt ?? firstTime,
-				endedAt: lastTime
+				endedAt: lastTime,
+				archived: archivedSet.has(sid)
 			});
 		}
 	}
@@ -640,7 +643,8 @@ function apply(ctx) {
 		}
 		if (usageCache.at === 0 || Date.now() - usageCache.at > USAGE_CACHE_TTL_MS) {
 			try {
-				usageCache.data = aggregateSessions();
+				const ws = ctx.get("workspaceRegistry");
+				usageCache.data = aggregateSessions(ws?.archivedSessionIds ?? []);
 				usageCache.at = Date.now();
 			} catch (error) {
 				if (ctx?.logger?.warn) ctx.logger.warn(`deepseek-balance: usage aggregation failed: ${error instanceof Error ? error.message : String(error)}`);

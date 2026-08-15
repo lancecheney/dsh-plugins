@@ -225,7 +225,7 @@ window.__ModuleLoader__.load({
 							react.createElement("h3", { className: P.title }, tr("panel.topSessions")),
 							(usageData ? (usageData.sessions || []).slice(0, 8) : []).map((s, i) => react.createElement("div", { key: s.id, className: P.row },
 								react.createElement("span", { className: P.rank }, String(i + 1)),
-								react.createElement("span", { className: P.rowTitle + (s.id === sessionId ? "" : " " + P.rowTitleGray) }, s.title || s.id),
+								react.createElement("span", { className: P.rowTitle + (s.archived ? " " + P.rowTitleGray : "") }, s.title || s.id),
 								react.createElement("span", { className: P.rowVal }, fmtTokens(s.tokens))
 							))
 						),
