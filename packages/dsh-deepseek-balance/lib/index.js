@@ -1,5 +1,6 @@
 import { credentialRef } from "@deepseek-ai/dsh-credentials";
 import { settingsNamespace } from "@deepseek-ai/dsh-settings";
+import { z } from "zod";
 
 /**
  * @lancecheney/dsh-deepseek-balance — host half.
@@ -267,7 +268,96 @@ function msUntilNextHourBeijing(hour) {
 	return deltaHours * 3600 * 1000 - bMinute * 60 * 1000 - bSecond * 1000 - bMs;
 }
 
+/** Beijing hour of a timestamp (UTC+8, no DST). */
+function beijingHourOf(time) {
+	return new Date(time + 8 * 3600 * 1000).getUTCHours();
+}
+
+function isPeakHour(hour) {
+	return (hour >= 9 && hour < 12) || (hour >= 14 && hour < 18);
+}
+
+const bucketSchema = z.object({
+	uncachedInputTokens: z.number().int().nonnegative(),
+	outputTokens: z.number().int().nonnegative(),
+	cacheReadTokens: z.number().int().nonnegative(),
+	cacheWriteTokens: z.number().int().nonnegative()
+});
+
+const tokenUsageByPeriodSchema = z.object({
+	peak: bucketSchema,
+	offPeak: bucketSchema
+});
+
+const zeroBucket = () => ({ uncachedInputTokens: 0, outputTokens: 0, cacheReadTokens: 0, cacheWriteTokens: 0 });
+
+const bucketsFrom = (usage) => ({
+	uncachedInputTokens: usage.inputTokens,
+	outputTokens: usage.outputTokens,
+	cacheReadTokens: usage.cacheReadTokens ?? 0,
+	cacheWriteTokens: usage.cacheWriteTokens ?? 0
+});
+
+const bucketsEqual = (a, b) =>
+	a.uncachedInputTokens === b.uncachedInputTokens &&
+	a.outputTokens === b.outputTokens &&
+	a.cacheReadTokens === b.cacheReadTokens &&
+	a.cacheWriteTokens === b.cacheWriteTokens;
+
+const addBucket = (total, delta) => ({
+	uncachedInputTokens: total.uncachedInputTokens + delta.uncachedInputTokens,
+	outputTokens: total.outputTokens + delta.outputTokens,
+	cacheReadTokens: total.cacheReadTokens + delta.cacheReadTokens,
+	cacheWriteTokens: total.cacheWriteTokens + delta.cacheWriteTokens
+});
+
+const subtractBucket = (total, delta) => ({
+	uncachedInputTokens: total.uncachedInputTokens - delta.uncachedInputTokens,
+	outputTokens: total.outputTokens - delta.outputTokens,
+	cacheReadTokens: total.cacheReadTokens - delta.cacheReadTokens,
+	cacheWriteTokens: total.cacheWriteTokens - delta.cacheWriteTokens
+});
+
+/**
+ * Whole-log token usage bucketed by Beijing-time peak/off-peak hour, so the
+ * client can price each hour at its own rate. Replacement semantics mirror the
+ * token-meter `tokenUsage` projection: an assistant/message finalizes the usage
+ * for its turn/step, replacing an earlier usage chunk instead of double counting.
+ */
+const tokenUsageByPeriodProjection = {
+	key: "tokenUsageByPeriod",
+	schema: tokenUsageByPeriodSchema,
+	init: () => ({ totals: { peak: zeroBucket(), offPeak: zeroBucket() }, last: null }),
+	apply: (state, event) => {
+		let turn;
+		let step;
+		let usage;
+		if (event.type === "assistant/chunk" && event.data.chunk.type === "usage") {
+			({ turn, step } = event.data);
+			usage = event.data.chunk.usage;
+		} else if (event.type === "assistant/message" && event.data.usage !== void 0) {
+			({ turn, step, usage } = event.data);
+		} else {
+			return state;
+		}
+		const period = isPeakHour(beijingHourOf(event.time)) ? "peak" : "offPeak";
+		const buckets = bucketsFrom(usage);
+		const previous = state.last !== null && state.last.turn === turn && state.last.step === step ? state.last : void 0;
+		if (previous !== void 0 && previous.period === period && bucketsEqual(previous.buckets, buckets)) return state;
+		const totals = { peak: state.totals.peak, offPeak: state.totals.offPeak };
+		if (previous !== void 0) totals[previous.period] = subtractBucket(totals[previous.period], previous.buckets);
+		totals[period] = addBucket(totals[period], buckets);
+		return { totals, last: { turn, step, period, buckets } };
+	},
+	view: (state) => state.totals,
+	stateVersion: 1
+};
+
 function apply(ctx) {
+	ctx.inject(["sessionProjections"], (projectionCtx) => {
+		projectionCtx.sessionProjections.register(tokenUsageByPeriodProjection);
+	});
+
 	const balanceHandler = async (req, res) => {
 		if (req.method !== "GET" && req.method !== "HEAD") {
 			json(res, 405, { error: "method not allowed" });

@@ -114,6 +114,15 @@ window.__ModuleLoader__.load({
 			return (miss * p.miss + hit * p.hit + output * p.output) / 1e6;
 		}
 
+		function sumBuckets(a, b) {
+			return {
+				uncachedInputTokens: (a.uncachedInputTokens ?? 0) + (b.uncachedInputTokens ?? 0),
+				outputTokens: (a.outputTokens ?? 0) + (b.outputTokens ?? 0),
+				cacheReadTokens: (a.cacheReadTokens ?? 0) + (b.cacheReadTokens ?? 0),
+				cacheWriteTokens: (a.cacheWriteTokens ?? 0) + (b.cacheWriteTokens ?? 0)
+			};
+		}
+
 		function translate(dict, key, params) {
 			let s = dict[key];
 			if (s === void 0) return key;
@@ -129,6 +138,7 @@ window.__ModuleLoader__.load({
 			const useProjection = props.useProjection;
 			const directory = props.directory;
 			const usage = useProjection("tokenUsage");
+			const byPeriod = useProjection("tokenUsageByPeriod");
 			const [state, setState] = react.useState({ phase: "loading" });
 
 			react.useEffect(() => {
@@ -185,7 +195,15 @@ window.__ModuleLoader__.load({
 			const model = models[modelId] || models[DEFAULT_MODEL] || FALLBACK_PRICING.currencies.CNY.models[DEFAULT_MODEL];
 			const p = (period === "peak" ? model.peak : period === "offPeak" ? model.offPeak : model.legacy) || model.peak;
 			const outputPrice = fmtPrice(p.output);
-			const cost = usage !== undefined && usage !== null ? costOf(usage, p) : null;
+			const cost = (() => {
+				if (byPeriod && byPeriod.peak && byPeriod.offPeak) {
+					if (isLegacy) {
+						return model.legacy ? costOf(sumBuckets(byPeriod.peak, byPeriod.offPeak), model.legacy) : null;
+					}
+					return costOf(byPeriod.peak, model.peak) + costOf(byPeriod.offPeak, model.offPeak);
+				}
+				return usage !== undefined && usage !== null ? costOf(usage, p) : null;
+			})();
 
 			// off -> base price; high (default) -> one +; max -> two +.
 			const plus = reasoningEffort === "max" ? "++" : reasoningEffort === "off" ? "" : "+";
