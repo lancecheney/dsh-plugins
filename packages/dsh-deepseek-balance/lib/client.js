@@ -43,7 +43,7 @@ window.__ModuleLoader__.load({
 		function fmtTokens(n) { if (!Number.isFinite(n)) return "—"; if (n < 1000) return String(Math.round(n)); const scaled = (v) => v >= 100 ? String(Math.round(v)) : String(Math.round(v * 10) / 10); if (n < 1e6) return scaled(n / 1e3) + "K"; return scaled(n / 1e6) + "M"; }
 		function fmtDuration(ms) { if (!Number.isFinite(ms) || ms <= 0) return "—"; const s = ms / 1e3; if (s < 60) return Math.round(s) + "s"; const w = Math.round(s); const h = Math.floor(w / 3600); const m = Math.floor((w % 3600) / 60); if (h > 0) return h + "h" + m + "m"; return m + "m" + (w % 60) + "s"; }
 		function beijingMonthKey(ms) { return new Date(ms + 8 * 3600 * 1000).toISOString().slice(0, 7); }
-		function findFrame(el) { let node = el; while (node && node.parentElement) { node = node.parentElement; const gt = getComputedStyle(node).gridTemplateColumns; if (gt.indexOf("1fr") !== -1 && /(\d+(?:\.\d+)?)px/.test(gt)) return node; } return null; }
+		function findFrame() { if (typeof document === "undefined") return null; const overlay = document.querySelector("[data-shell-overlay]"); return overlay && overlay.parentElement ? overlay.parentElement : null; }
 		function sidebarWidthOf(frame) { const gt = getComputedStyle(frame).gridTemplateColumns; const m = gt.match(/(\d+(?:\.\d+)?)px/); return m ? parseFloat(m[1]) : null; }
 		const noopSubscribe = () => () => {};
 
@@ -153,12 +153,12 @@ window.__ModuleLoader__.load({
 			}, []);
 
 			react.useEffect(() => {
-				const frame = findFrame(rootRef.current);
+				const frame = findFrame();
 				if (!frame) return;
 				const apply = () => { const w = sidebarWidthOf(frame); if (w !== null) setSidebarW(w); };
 				apply();
 				const mo = new MutationObserver(apply);
-				mo.observe(frame, { attributes: true, attributeFilter: ["style"] });
+				mo.observe(frame, { attributes: true });
 				window.addEventListener("resize", apply);
 				return () => { mo.disconnect(); window.removeEventListener("resize", apply); };
 			}, []);
