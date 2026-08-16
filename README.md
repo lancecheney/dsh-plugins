@@ -12,7 +12,7 @@ A monorepo of [DeepSeek Harness](https://github.com/deepseek-ai/deepseek-harness
 
 ## Screenshot / 截图
 
-`dsh-deepseek-balance` 在 **Session log** 左侧显示余额 / 消耗 / 峰谷价格徽章：
+`dsh-deepseek-balance` 在 **Session log** 左侧显当前会话消耗 / 余额 / 峰谷价格徽章：
 
 ![badge](https://github.com/lancecheney/dsh-plugins/raw/main/docs/screenshot.png)
 
