@@ -29,6 +29,7 @@ const PRICING_FETCH_TIMEOUT_MS = 15000;
 /** Last-known-good prices: legacy + the 2026-08-17 peak/off-peak table, per currency. */
 const FALLBACK_PRICING = {
 	effectiveFrom: "2026-08-17T00:00:00+08:00",
+	weekendFrom: "2026-08-23T00:00:00+08:00",
 	currencies: {
 		CNY: {
 			symbol: "¥",
@@ -42,6 +43,11 @@ const FALLBACK_PRICING = {
 					legacy: { hit: 0.025, miss: 3.0, output: 6.0 },
 					peak: { hit: 0.30, miss: 9.0, output: 27.0 },
 					offPeak: { hit: 0.15, miss: 4.5, output: 13.5 }
+				},
+				"deepseek-v4-flash-vision-exp": {
+					legacy: { hit: 0.02, miss: 1.0, output: 2.0 },
+					peak: { hit: 0.10, miss: 3.0, output: 9.0 },
+					offPeak: { hit: 0.05, miss: 1.5, output: 4.5 }
 				}
 			}
 		},
@@ -57,6 +63,11 @@ const FALLBACK_PRICING = {
 					legacy: { hit: 0.003625, miss: 0.435, output: 0.87 },
 					peak: { hit: 0.044, miss: 1.32, output: 3.96 },
 					offPeak: { hit: 0.022, miss: 0.66, output: 1.98 }
+				},
+				"deepseek-v4-flash-vision-exp": {
+					legacy: { hit: 0.0028, miss: 0.14, output: 0.28 },
+					peak: { hit: 0.014, miss: 0.44, output: 1.32 },
+					offPeak: { hit: 0.007, miss: 0.22, output: 0.66 }
 				}
 			}
 		}
@@ -136,80 +147,83 @@ const number = (match, index) => {
 	return Number.isFinite(value) ? value : void 0;
 };
 
-/** Parse the zh-CN docs page: CNY prices + the effective date. */
+/** Parse the zh-CN docs page: CNY peak/off-peak table (3 columns). */
 function parseCnPricing(html) {
 	const text = stripTags(html);
-	const parseModel = (id) => {
-		const re = new RegExp(id + "\\s+空闲时段\\s+([\\d.]+)元\\s+([\\d.]+)元\\s+([\\d.]+)元\\s+高峰时段\\s+([\\d.]+)元\\s+([\\d.]+)元\\s+([\\d.]+)元");
+	const grab = (label) => {
+		const re = new RegExp(label + "\\s*空闲时段\\s*([\\d.]+)元\\s*([\\d.]+)元\\s*([\\d.]+)元\\s*高峰时段\\s*([\\d.]+)元\\s*([\\d.]+)元\\s*([\\d.]+)元");
 		const m = text.match(re);
 		if (!m) return void 0;
 		return {
-			offPeak: { hit: number(m, 1), miss: number(m, 2), output: number(m, 3) },
-			peak: { hit: number(m, 4), miss: number(m, 5), output: number(m, 6) }
+			offPeak: [number(m, 1), number(m, 2), number(m, 3)],
+			peak: [number(m, 4), number(m, 5), number(m, 6)]
 		};
 	};
-	const flash = parseModel("deepseek-v4-flash");
-	const pro = parseModel("deepseek-v4-pro");
-	if (!flash || !pro) throw new Error("CNY peak/off-peak table not found");
+	const hit = grab("百万tokens输入\\s*（缓存命中）");
+	const miss = grab("百万tokens输入\\s*（缓存未命中）");
+	const out = grab("百万tokens输出");
+	if (!hit || !miss || !out) throw new Error("CNY peak/off-peak table not found");
 
-	let effectiveFrom = FALLBACK_PRICING.effectiveFrom;
-	const dm = text.match(/北京时间\s*(\d{4})\s*年\s*(\d{1,2})\s*月\s*(\d{1,2})\s*日\s*(\d{1,2}):(\d{2})/);
-	if (dm) {
-		const [y, mo, d, h, mi] = [1, 2, 3, 4, 5].map((i) => Number(dm[i]));
-		effectiveFrom = `${y}-${String(mo).padStart(2, "0")}-${String(d).padStart(2, "0")}T${String(h).padStart(2, "0")}:${String(mi).padStart(2, "0")}:00+08:00`;
-	}
-
-	let legacy;
-	const lm = text.match(/百万tokens输入（缓存命中）\s*([\d.]+)元\s*([\d.]+)元\s*百万tokens输入（缓存未命中）\s*([\d.]+)元\s*([\d.]+)元\s*百万tokens输出\s*([\d.]+)元\s*([\d.]+)元/);
-	if (lm) {
-		legacy = {
-			flash: { hit: number(lm, 1), miss: number(lm, 3), output: number(lm, 5) },
-			pro: { hit: number(lm, 2), miss: number(lm, 4), output: number(lm, 6) }
-		};
-	}
+	const mk = (i) => ({
+		offPeak: { hit: hit.offPeak[i], miss: miss.offPeak[i], output: out.offPeak[i] },
+		peak: { hit: hit.peak[i], miss: miss.peak[i], output: out.peak[i] }
+	});
 
 	return {
-		effectiveFrom,
 		models: {
-			"deepseek-v4-flash": { ...(legacy?.flash ? { legacy: legacy.flash } : {}), peak: flash.peak, offPeak: flash.offPeak },
-			"deepseek-v4-pro": { ...(legacy?.pro ? { legacy: legacy.pro } : {}), peak: pro.peak, offPeak: pro.offPeak }
+			"deepseek-v4-flash": mk(0),
+			"deepseek-v4-pro": mk(1),
+			"deepseek-v4-flash-vision-exp": mk(2)
 		}
 	};
 }
 
-/** Parse the English docs page: USD prices. */
+/** Parse the English docs page: USD peak/off-peak table (3 columns). */
 function parseUsModels(html) {
 	const text = stripTags(html);
-	const parseModel = (id) => {
-		const re = new RegExp(id + "\\s+OFF-PEAK\\s+\\$([\\d.]+)\\s+\\$([\\d.]+)\\s+\\$([\\d.]+)\\s+PEAK\\s+\\$([\\d.]+)\\s+\\$([\\d.]+)\\s+\\$([\\d.]+)", "i");
+	const grab = (label) => {
+		const re = new RegExp(label + "\\s+OFF-PEAK\\s+\\$([\\d.]+)\\s+\\$([\\d.]+)\\s+\\$([\\d.]+)\\s+PEAK\\s+\\$([\\d.]+)\\s+\\$([\\d.]+)\\s+\\$([\\d.]+)", "i");
 		const m = text.match(re);
 		if (!m) return void 0;
 		return {
-			offPeak: { hit: number(m, 1), miss: number(m, 2), output: number(m, 3) },
-			peak: { hit: number(m, 4), miss: number(m, 5), output: number(m, 6) }
+			offPeak: [number(m, 1), number(m, 2), number(m, 3)],
+			peak: [number(m, 4), number(m, 5), number(m, 6)]
 		};
 	};
-	const flash = parseModel("deepseek-v4-flash");
-	const pro = parseModel("deepseek-v4-pro");
-	if (!flash || !pro) throw new Error("USD peak/off-peak table not found");
+	const hit = grab("1M INPUT TOKENS\\s*\\(CACHE HIT\\)");
+	const miss = grab("1M INPUT TOKENS\\s*\\(CACHE MISS\\)");
+	const out = grab("1M OUTPUT TOKENS");
+	if (!hit || !miss || !out) throw new Error("USD peak/off-peak table not found");
 
-	let legacy;
-	const lm = text.match(/1M INPUT TOKENS \(CACHE HIT\)\s+\$([\d.]+)\s+\$([\d.]+)\s+1M INPUT TOKENS \(CACHE MISS\)\s+\$([\d.]+)\s+\$([\d.]+)\s+1M OUTPUT TOKENS\s+\$([\d.]+)\s+\$([\d.]+)/i);
-	if (lm) {
-		legacy = {
-			flash: { hit: number(lm, 1), miss: number(lm, 3), output: number(lm, 5) },
-			pro: { hit: number(lm, 2), miss: number(lm, 4), output: number(lm, 6) }
-		};
-	}
+	const mk = (i) => ({
+		offPeak: { hit: hit.offPeak[i], miss: miss.offPeak[i], output: out.offPeak[i] },
+		peak: { hit: hit.peak[i], miss: miss.peak[i], output: out.peak[i] }
+	});
 
 	return {
-		"deepseek-v4-flash": { ...(legacy?.flash ? { legacy: legacy.flash } : {}), peak: flash.peak, offPeak: flash.offPeak },
-		"deepseek-v4-pro": { ...(legacy?.pro ? { legacy: legacy.pro } : {}), peak: pro.peak, offPeak: pro.offPeak }
+		models: {
+			"deepseek-v4-flash": mk(0),
+			"deepseek-v4-pro": mk(1),
+			"deepseek-v4-flash-vision-exp": mk(2)
+		}
 	};
 }
 
 const pricing = { data: FALLBACK_PRICING, fetchedAt: 0, source: "fallback" };
 let pricingRefresh = null;
+
+function mergeLegacy(models, fallbackModels) {
+	const result = {};
+	for (const [id, m] of Object.entries(models)) {
+		const fb = fallbackModels[id];
+		result[id] = {
+			...(fb && fb.legacy ? { legacy: fb.legacy } : {}),
+			peak: m.peak,
+			offPeak: m.offPeak
+		};
+	}
+	return result;
+}
 
 async function refreshPricing(ctx) {
 	if (pricingRefresh) return pricingRefresh;
@@ -218,6 +232,7 @@ async function refreshPricing(ctx) {
 			if (ctx?.logger?.warn) ctx.logger.warn(`deepseek-balance: ${message}`);
 		};
 		let effectiveFrom = FALLBACK_PRICING.effectiveFrom;
+		let weekendFrom = FALLBACK_PRICING.weekendFrom;
 		let cnModels = FALLBACK_PRICING.currencies.CNY.models;
 		let usModels = FALLBACK_PRICING.currencies.USD.models;
 		try {
@@ -228,8 +243,7 @@ async function refreshPricing(ctx) {
 			if (cnRes.ok) {
 				try {
 					const parsed = parseCnPricing(await cnRes.text());
-					effectiveFrom = parsed.effectiveFrom;
-					cnModels = parsed.models;
+					cnModels = mergeLegacy(parsed.models, FALLBACK_PRICING.currencies.CNY.models);
 				} catch (error) {
 					warn(`CNY pricing parse failed: ${error instanceof Error ? error.message : String(error)}`);
 				}
@@ -238,7 +252,8 @@ async function refreshPricing(ctx) {
 			}
 			if (usRes.ok) {
 				try {
-					usModels = parseUsModels(await usRes.text());
+					const parsed = parseUsModels(await usRes.text());
+					usModels = mergeLegacy(parsed.models, FALLBACK_PRICING.currencies.USD.models);
 				} catch (error) {
 					warn(`USD pricing parse failed: ${error instanceof Error ? error.message : String(error)}`);
 				}
@@ -247,6 +262,7 @@ async function refreshPricing(ctx) {
 			}
 			pricing.data = {
 				effectiveFrom,
+				weekendFrom,
 				currencies: {
 					CNY: { symbol: "¥", models: cnModels },
 					USD: { symbol: "$", models: usModels }
@@ -333,9 +349,12 @@ function beijingDayKey(ms) {
 	return new Date(ms + 8 * 3600 * 1000).toISOString().slice(0, 10);
 }
 
-function periodOfUsage(time, effectiveFromMs) {
+function periodOfUsage(time, effectiveFromMs, weekendFromMs) {
 	if (time < effectiveFromMs) return "flat";
-	const hour = new Date(time + 8 * 3600 * 1000).getUTCHours();
+	const d = new Date(time + 8 * 3600 * 1000);
+	const day = d.getUTCDay();
+	if ((day === 0 || day === 6) && Number.isFinite(weekendFromMs) && time >= weekendFromMs) return "offPeak";
+	const hour = d.getUTCHours();
 	return (hour >= 9 && hour < 12) || (hour >= 14 && hour < 18) ? "peak" : "offPeak";
 }
 
@@ -378,6 +397,7 @@ function aggregateSessions(archivedIds = []) {
 	if (!existsSync(root)) return summary;
 	const effectiveFromMs = Date.parse(pricing.data.effectiveFrom || FALLBACK_PRICING.effectiveFrom);
 	if (!Number.isFinite(effectiveFromMs)) return summary;
+	const weekendFromMs = Date.parse(pricing.data.weekendFrom || FALLBACK_PRICING.weekendFrom);
 
 	let wsDirs = [];
 	try { wsDirs = readdirSync(root); } catch { return summary; }
@@ -440,7 +460,7 @@ function aggregateSessions(archivedIds = []) {
 				else if (r.type === "assistant/chunk" && r.data?.chunk?.type === "usage") usage = r.data.chunk.usage;
 				if (usage && time !== null && dedupe.has(r)) {
 					const t = (usage.inputTokens ?? 0) + (usage.outputTokens ?? 0) + (usage.cacheReadTokens ?? 0);
-					const period = periodOfUsage(time, effectiveFromMs);
+					const period = periodOfUsage(time, effectiveFromMs, weekendFromMs);
 					const dayKey = beijingDayKey(time);
 					tokens += t;
 					if (period === "peak") peakTokens += t;
@@ -705,7 +725,7 @@ function apply(ctx, config = {}) {
 					spend: computeSpend({ byModel: s.byModel || {} }, usageCache.currency || "CNY"),
 					apiKeyPreview: key,
 					tokenName: resolveTokenName(config),
-					effectiveFrom: pricing.data.effectiveFrom,
+					effectiveFrom: pricing.data.effectiveFrom, weekendFrom: pricing.data.weekendFrom,
 					fetchedAt: usageCache.at,
 					source: pricing.source
 				});

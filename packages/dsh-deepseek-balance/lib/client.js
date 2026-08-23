@@ -25,15 +25,16 @@ window.__ModuleLoader__.load({
 		const MODEL_META = { "deepseek-v4-pro": { label: "DeepSeek-V4-Pro" }, "deepseek-v4-flash": { label: "DeepSeek-V4-Flash" } };
 		const FALLBACK_PRICING = {
 			effectiveFrom: "2026-08-17T00:00:00+08:00",
+			weekendFrom: "2026-08-23T00:00:00+08:00",
 			currencies: {
-				CNY: { symbol: "¥", models: { "deepseek-v4-pro": { legacy: { hit: 0.025, miss: 3.0, output: 6.0 }, peak: { hit: 0.30, miss: 9.0, output: 27.0 }, offPeak: { hit: 0.15, miss: 4.5, output: 13.5 } }, "deepseek-v4-flash": { legacy: { hit: 0.02, miss: 1.0, output: 2.0 }, peak: { hit: 0.10, miss: 3.0, output: 9.0 }, offPeak: { hit: 0.05, miss: 1.5, output: 4.5 } } } },
-				USD: { symbol: "$", models: { "deepseek-v4-pro": { legacy: { hit: 0.003625, miss: 0.435, output: 0.87 }, peak: { hit: 0.044, miss: 1.32, output: 3.96 }, offPeak: { hit: 0.022, miss: 0.66, output: 1.98 } }, "deepseek-v4-flash": { legacy: { hit: 0.0028, miss: 0.14, output: 0.28 }, peak: { hit: 0.014, miss: 0.44, output: 1.32 }, offPeak: { hit: 0.007, miss: 0.22, output: 0.66 } } } }
+				CNY: { symbol: "¥", models: { "deepseek-v4-pro": { legacy: { hit: 0.025, miss: 3.0, output: 6.0 }, peak: { hit: 0.30, miss: 9.0, output: 27.0 }, offPeak: { hit: 0.15, miss: 4.5, output: 13.5 } }, "deepseek-v4-flash": { legacy: { hit: 0.02, miss: 1.0, output: 2.0 }, peak: { hit: 0.10, miss: 3.0, output: 9.0 }, offPeak: { hit: 0.05, miss: 1.5, output: 4.5 } }, "deepseek-v4-flash-vision-exp": { legacy: { hit: 0.02, miss: 1.0, output: 2.0 }, peak: { hit: 0.10, miss: 3.0, output: 9.0 }, offPeak: { hit: 0.05, miss: 1.5, output: 4.5 } } } },
+				USD: { symbol: "$", models: { "deepseek-v4-pro": { legacy: { hit: 0.003625, miss: 0.435, output: 0.87 }, peak: { hit: 0.044, miss: 1.32, output: 3.96 }, offPeak: { hit: 0.022, miss: 0.66, output: 1.98 } }, "deepseek-v4-flash": { legacy: { hit: 0.0028, miss: 0.14, output: 0.28 }, peak: { hit: 0.014, miss: 0.44, output: 1.32 }, offPeak: { hit: 0.007, miss: 0.22, output: 0.66 } }, "deepseek-v4-flash-vision-exp": { legacy: { hit: 0.0028, miss: 0.14, output: 0.28 }, peak: { hit: 0.014, miss: 0.44, output: 1.32 }, offPeak: { hit: 0.007, miss: 0.22, output: 0.66 } } } }
 			}
 		};
 		const DEFAULT_MODEL = "deepseek-v4-pro";
 
 		function beijingDecimalHour(now) { let h = 0, m = 0; try { const p = new Intl.DateTimeFormat("en-GB", { timeZone: "Asia/Shanghai", hour12: false, hour: "2-digit", minute: "2-digit" }).formatToParts(now); for (const x of p) { if (x.type === "hour") h = Number(x.value); if (x.type === "minute") m = Number(x.value); } } catch { h = now.getHours(); m = now.getMinutes(); } return h + m / 60; }
-		function periodFor(now, effectiveFrom) { const eff = Date.parse(effectiveFrom); if (Number.isFinite(eff) && now.getTime() < eff) return "legacy"; const h = beijingDecimalHour(now); return (h >= 9 && h < 12) || (h >= 14 && h < 18) ? "peak" : "offPeak"; }
+		function periodFor(now, effectiveFrom, weekendFrom) { const eff = Date.parse(effectiveFrom); if (Number.isFinite(eff) && now.getTime() < eff) return "legacy"; const wk = Date.parse(weekendFrom); const d = new Date(now.getTime() + 8 * 3600 * 1000); const day = d.getUTCDay(); if ((day === 0 || day === 6) && Number.isFinite(wk) && now.getTime() >= wk) return "offPeak"; const h = beijingDecimalHour(now); return (h >= 9 && h < 12) || (h >= 14 && h < 18) ? "peak" : "offPeak"; }
 		function firstBalance(data) { const infos = data && data.balance_infos; if (!Array.isArray(infos) || infos.length === 0) return null; return infos.find((r) => r.currency === "CNY") || infos[0]; }
 		function fmtPrice(v) { const n = Number(v); return Number.isFinite(n) ? String(n) : String(v); }
 		function fmtMoney(v) { const n = Number(v); if (!Number.isFinite(n)) return "—"; if (n <= 0) return "0.00"; if (n < 0.01) return n.toFixed(4); if (n < 1) return n.toFixed(3); return n.toFixed(2); }
@@ -89,6 +90,7 @@ window.__ModuleLoader__.load({
 
 			const pricing = state.pricing || FALLBACK_PRICING;
 			const effectiveFrom = pricing.effectiveFrom || FALLBACK_PRICING.effectiveFrom;
+			const weekendFrom = pricing.weekendFrom || FALLBACK_PRICING.weekendFrom;
 			const balanceRow = state.phase === "ok" && state.balance ? firstBalance(state.balance) : null;
 			const currency = balanceRow && balanceRow.currency ? balanceRow.currency : "CNY";
 			const dict = currency === "USD" ? en : zh;
@@ -102,7 +104,7 @@ window.__ModuleLoader__.load({
 			const modelId = currentSelection && currentSelection.model ? currentSelection.model : DEFAULT_MODEL;
 			const reasoningEffort = currentSelection ? currentSelection.reasoningEffort : void 0;
 
-			const period = periodFor(new Date(), effectiveFrom);
+			const period = periodFor(new Date(), effectiveFrom, weekendFrom);
 			const isPeak = period === "peak";
 			const isLegacy = period === "legacy";
 			const model = models[modelId] || models[DEFAULT_MODEL] || FALLBACK_PRICING.currencies.CNY.models[DEFAULT_MODEL];
@@ -233,7 +235,7 @@ window.__ModuleLoader__.load({
 							stat(tr("stat.total"), usageData ? fmtTokens(usageData.totalTokens) : "…"), sepBar("s1"),
 							stat(tr("stat.dailyPeak"), usageData ? fmtTokens(usageData.dailyPeakTokens) : "…"), sepBar("s2"),
 							stat(tr("stat.longest"), usageData ? fmtDuration(usageData.longestChatMs) : "…"), sepBar("s3"),
-							stat(tr("stat.curStreak"), usageData ? usageData.currentStreak + tr("unit.day") : "…"), sepBar("s4"),
+							stat(tr("stat.todayTokens"), usageData && usageData.days && usageData.days[beijingDayKey(Date.now())] ? fmtTokens(usageData.days[beijingDayKey(Date.now())].tokens) : "…"), sepBar("s4"),
 							stat(tr("stat.longStreak"), usageData ? usageData.longestStreak + tr("unit.day") : "…")
 						),
 						react.createElement("div", { className: P.balance },
@@ -321,7 +323,7 @@ window.__ModuleLoader__.load({
 			"balance.unavailable": "余额不可用",
 			"panel.stats": "统计", "panel.balance": "余额与消耗", "panel.topup": "跳转API官网", "panel.save": "保存",
 			"panel.topSessions": "消耗最多的对话", "panel.month": "每日分布", "panel.monthPeriod": "每日时段分布", "panel.monthTokens": "每日 Token 消耗", "panel.peakSessions": "高峰消耗排行", "panel.modelEffort": "模型与思考强度",
-			"stat.total": "累计 Token", "stat.dailyPeak": "每日峰值", "stat.longest": "最长聊天", "stat.curStreak": "当前连续", "stat.longStreak": "最长连续", "stat.today": "今日消耗", "stat.cumulative": "累计消耗",
+			"stat.total": "累计 Token", "stat.dailyPeak": "每日峰值", "stat.longest": "最长聊天", "stat.longStreak": "最长连续", "stat.todayTokens": "今日 Token", "stat.today": "今日消耗", "stat.cumulative": "累计消耗",
 			"unit.day": " 天",
 			"legend.flat": "平价", "legend.peak": "高峰", "legend.off": "空闲", "legend.none": "无数据", "legend.less": "少", "legend.more": "多"
 		};
@@ -331,7 +333,7 @@ window.__ModuleLoader__.load({
 			"balance.unavailable": "balance unavailable",
 			"panel.stats": "Stats", "panel.balance": "Balance & Spend", "panel.topup": "API site", "panel.save": "Save",
 			"panel.topSessions": "Top conversations", "panel.month": "Daily", "panel.monthPeriod": "Daily period", "panel.monthTokens": "Daily token usage", "panel.peakSessions": "Peak-hour ranking", "panel.modelEffort": "Model & effort",
-			"stat.total": "Total tokens", "stat.dailyPeak": "Daily peak", "stat.longest": "Longest chat", "stat.curStreak": "Current streak", "stat.longStreak": "Longest streak", "stat.today": "Today", "stat.cumulative": "Total",
+			"stat.total": "Total tokens", "stat.dailyPeak": "Daily peak", "stat.longest": "Longest chat", "stat.longStreak": "Longest streak", "stat.todayTokens": "Today tokens", "stat.today": "Today", "stat.cumulative": "Total",
 			"unit.day": "d",
 			"legend.flat": "Flat", "legend.peak": "Peak", "legend.off": "Off-peak", "legend.none": "None", "legend.less": "Less", "legend.more": "More"
 		};
