@@ -416,6 +416,27 @@ function readSessionRecords(path) {
 	return records;
 }
 
+/**
+ * Resolve one session's event log. DSH rewrites a session's whole history into
+ * `session.v3.jsonl.zstd` (new event schema) while the legacy `session.jsonl.zstd`
+ * stays frozen at the upgrade, so the v3 file is the newer and complete copy.
+ * Reading both would double count every token, so v3 always wins when present.
+ */
+function sessionLogPath(sPath) {
+	for (const name of ["session.v3.jsonl.zstd", "session.jsonl.zstd", "session.v3.jsonl", "session.jsonl"]) {
+		const p = join(sPath, name);
+		if (existsSync(p)) return p;
+	}
+	return null;
+}
+
+/** Whether two model selections are the same provider/model/effort triple. */
+function sameSelection(a, b) {
+	if (a === b) return true;
+	if (!a || !b) return false;
+	return a.model === b.model && (a.effort ?? null) === (b.effort ?? null);
+}
+
 function aggregateSessions(archivedIds = []) {
 	const archivedSet = new Set(archivedIds);
 	const root = join(dshHome(), "sessions");
@@ -446,16 +467,20 @@ function aggregateSessions(archivedIds = []) {
 		try { sDirs = readdirSync(wsPath); } catch { continue; }
 		for (const sDir of sDirs) {
 			const sPath = join(wsPath, sDir);
-			const zstd = join(sPath, "session.jsonl.zstd");
-			const plain = join(sPath, "session.jsonl");
-			const path = existsSync(zstd) ? zstd : existsSync(plain) ? plain : null;
+			const path = sessionLogPath(sPath);
 			if (path === null) continue;
 			let records;
 			try { records = readSessionRecords(path); } catch { continue; }
 			let header = null;
 			let title = null;
+			// `model`/`effort` follow the request header in force at each event, so
+			// every step is billed with the model that actually produced it.
 			let model = null;
 			let effort = null;
+			// Durable selection intent, mirroring DSH's own modelSelection projection:
+			// `pending` holds a switch that the next request has not consumed yet.
+			let lastUsed = null;
+			let pending = null;
 			let firstTime = null;
 			let lastTime = null;
 			let tokens = 0;
@@ -486,8 +511,21 @@ function aggregateSessions(archivedIds = []) {
 				if (r.type === "session" && header === null) { header = r; continue; }
 				if (r.type === "session/title" && r.data?.title) title = r.data.title;
 				if (r.type === "request/header") {
-					model = r.data?.header?.config?.model ?? model;
-					effort = r.data?.header?.config?.reasoningEffort ?? effort;
+					const hm = r.data?.header?.config?.model;
+					const he = r.data?.header?.config?.reasoningEffort;
+					if (hm !== void 0) {
+						model = hm;
+						effort = he ?? null;
+						lastUsed = { model: hm, effort: he ?? null };
+						if (sameSelection(pending, lastUsed)) pending = null;
+					}
+				}
+				if (r.type === "model/selection") {
+					const sm = r.data?.model;
+					if (typeof sm === "string" && sm !== "") {
+						const sel = { model: sm, effort: r.data?.reasoningEffort ?? null };
+						if (!sameSelection(pending, sel)) pending = sel;
+					}
 				}
 				const time = typeof r.time === "number" ? r.time : null;
 				if (time !== null) {
@@ -555,6 +593,9 @@ function aggregateSessions(archivedIds = []) {
 			if (duration > summary.longestChatMs) summary.longestChatMs = duration;
 
 			const sid = header?.id ?? sDir.replace(/^session-/, "");
+			// What the NEXT request will use: an unconsumed switch wins over the
+			// model of the last request, exactly like the client-side projection.
+			const effective = pending ?? lastUsed;
 			summary.sessions.push({
 				id: sid,
 				title: title ?? header?.id ?? sDir,
@@ -564,6 +605,9 @@ function aggregateSessions(archivedIds = []) {
 				byModel: sessionByModel,
 				createdAt: header?.createdAt ?? firstTime,
 				endedAt: lastTime,
+				model: effective ? resolveModelId(effective.model) : null,
+				rawModel: effective?.model ?? null,
+				effort: effective?.effort ?? null,
 				archived: archivedSet.has(sid)
 			});
 		}
@@ -771,6 +815,9 @@ function apply(ctx, config = {}) {
 					id: s.id,
 					title: s.title,
 					tokens: s.tokens,
+					model: s.model ?? null,
+					rawModel: s.rawModel ?? null,
+					effort: s.effort ?? null,
 					spend: computeSpend({ byModel: s.byModel || {} }, usageCache.currency || "CNY"),
 					apiKeyPreview: key,
 					tokenName: resolveTokenName(config),
@@ -784,6 +831,9 @@ function apply(ctx, config = {}) {
 				id: sessionId,
 				title: sessionId,
 				tokens: 0,
+				model: null,
+				rawModel: null,
+				effort: null,
 				spend: { total: 0, today: null, currency: usageCache.currency || "CNY" },
 				apiKeyPreview: key,
 				tokenName: resolveTokenName(config),

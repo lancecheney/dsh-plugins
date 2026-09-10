@@ -7,7 +7,7 @@ window.__ModuleLoader__.load({
 		let react = require("react");
 
 		const css = ".Dbg1_root{display:inline-flex;align-items:center;gap:6px;height:32px;border:1px solid var(--dsw-alias-border-l2);border-radius:18px;padding:0 12px;font-family:var(--dsw-font-family);font-size:12px;line-height:18px;color:var(--dsw-alias-label-secondary);background:0 0;white-space:nowrap;cursor:pointer}.Dbg1_root:hover{background:var(--dsw-alias-interactive-bg-hover)}.Dbg1_num{color:var(--dsw-alias-label-primary);font-variant-numeric:tabular-nums;font-weight:500}.Dbg1_sep{color:var(--dsw-alias-label-dimmed)}.Dbg1_chip{border-radius:9px;padding:0 8px;font-size:11px;line-height:18px;font-weight:600}.Dbg1_peak{color:var(--dsw-alias-state-warn-primary)}.Dbg1_offPeak{color:var(--dsw-alias-state-success-primary)}.Dbg1_legacy{color:var(--dsw-alias-label-tertiary)}.Dbg1_dimmed{color:var(--dsw-alias-label-dimmed)}.Dbg1_plus{font-size:9px;line-height:1;vertical-align:super;color:var(--dsw-alias-state-warn-primary);font-weight:700}.Dbg1_unit{font-size:10px}";
-		const css2 = ".Dp1_backdrop{position:fixed;top:0;bottom:0;right:0;background:rgba(0,0,0,.32);z-index:60}.Dp1_panel{position:fixed;top:0;bottom:0;right:0;z-index:61;display:flex;flex-direction:column;background:var(--dsw-alias-bg-base);border-left:1px solid var(--dsw-alias-border-l1);box-shadow:var(--dsw-shadow-lv3);overflow-y:auto}.Dp1_head{display:flex;flex-direction:column;align-items:center;gap:8px;padding:32px 56px 22px;position:relative}.Dp1_avatar{width:64px;height:64px;border-radius:50%;background:var(--dsw-alias-fill-l2);color:var(--dsw-alias-label-primary);display:flex;align-items:center;justify-content:center;font-weight:700;font-size:24px;flex:none;border:2px solid var(--dsw-alias-border-l2)}.Dp1_name{font-size:18px;font-weight:600;color:var(--dsw-alias-label-primary)}.Dp1_key{font-family:var(--dsw-font-mono);color:var(--dsw-alias-label-tertiary);font-size:13px}.Dp1_close{position:fixed;top:16px;right:16px;cursor:pointer;background:0 0;border:0;color:var(--dsw-alias-label-secondary);font-size:22px;line-height:1;z-index:62}.Dp1_body{padding:0 56px 36px;display:flex;flex-direction:column;gap:26px}.Dp1_stats{display:flex;align-items:center;justify-content:center;gap:56px;flex-wrap:wrap;padding:18px 0}.Dp1_statItem{display:flex;flex-direction:column;align-items:center;gap:4px}.Dp1_statValue{font-size:18px;font-weight:600;color:var(--dsw-alias-label-primary);font-variant-numeric:tabular-nums}.Dp1_statLabel{font-size:12px;color:var(--dsw-alias-label-tertiary)}.Dp1_sepBar{color:var(--dsw-alias-label-dimmed);font-size:14px}.Dp1_balance{display:flex;flex-wrap:wrap;gap:16px;justify-content:center;margin:0 auto}.Dp1_balanceBlock{position:relative;box-sizing:border-box;width:200px;background:rgba(127,127,127,.10);border-radius:14px;padding:10px 14px;display:flex;flex-direction:column;align-items:flex-start;gap:2px;height:80px}.Dp1_balanceBlockLabel{font-size:12px;color:var(--dsw-alias-label-tertiary)}.Dp1_balanceBlockValue{font-size:28px;font-weight:700;color:var(--dsw-alias-label-primary);font-variant-numeric:tabular-nums;margin-top:auto}.Dp1_balanceBlock .Dp1_btn{position:absolute;right:12px;top:10px;height:22px;padding:0 8px;font-size:12px}.Dp1_btn{display:inline-flex;align-items:center;justify-content:center;height:30px;padding:0 12px;border-radius:999px;border:1px solid var(--dsw-alias-border-l2);background:0 0;color:var(--dsw-alias-label-primary);cursor:pointer;font-size:13px}.Dp1_btn:hover{background:var(--dsw-alias-interactive-bg-hover)}.Dp1_btnPrimary{background:#4d6bfe;color:#fff;border:none}.Dp1_section{padding:16px 0}.Dp1_title{font-size:13px;color:var(--dsw-alias-label-secondary);margin:0 0 12px;font-weight:600;letter-spacing:.02em}.Dp1_row{display:flex;align-items:center;gap:8px;padding:7px 0}.Dp1_twoCol{display:grid;grid-template-columns:1fr 1fr;gap:0 80px;align-items:start}.Dp1_rowTitle{flex:1;min-width:0;color:var(--dsw-alias-label-primary);font-size:14px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}.Dp1_rowTitleGray{color:var(--dsw-alias-label-dimmed)}.Dp1_rowVal{color:var(--dsw-alias-label-secondary);font-variant-numeric:tabular-nums;font-size:13px;flex:none}.Dp1_rank{color:var(--dsw-alias-label-tertiary);width:18px;text-align:right;flex:none;font-size:13px}.Dp1_monthNav{display:flex;align-items:center;justify-content:center;gap:16px;margin-bottom:14px}.Dp1_monthGrids{display:flex;flex-wrap:wrap;gap:20px}.Dp1_monthGrids .Dp1_monthGroup{flex:1 1 260px;min-width:0}.Dp1_monthGroup{display:flex;flex-direction:column;align-items:center;gap:8px}.Dp1_monthGroupTitle{font-size:12px;color:var(--dsw-alias-label-tertiary)}.Dp1_grid{display:grid;grid-template-columns:repeat(7,1fr);gap:5px;width:100%;max-width:170px}.Dp1_cell{aspect-ratio:1;border-radius:6px;background:rgba(127,127,127,.08);display:flex;align-items:center;justify-content:center;font-size:10px;color:var(--dsw-alias-label-tertiary)}.Dp1_cellFlat{background:#60a5fa;color:#fff}.Dp1_cellPeak{background:#f97316;color:#fff}.Dp1_cellOff{background:#22c55e;color:#fff}.Dp1_cellBlue{color:#fff}.Dp1_legend{display:flex;gap:12px;margin-top:10px;justify-content:center;font-size:11px;color:var(--dsw-alias-label-tertiary);flex-wrap:wrap}.Dp1_dot{display:inline-block;width:8px;height:8px;border-radius:2px;margin-right:4px;vertical-align:middle}.Dp1_nameRow{display:flex;align-items:center;gap:6px}.Dp1_edit{border:0;background:0 0;cursor:pointer;color:var(--dsw-alias-label-tertiary);font-size:14px;padding:2px;line-height:1}.Dp1_edit:hover{color:var(--dsw-alias-label-primary)}.Dp1_editRow{display:flex;align-items:center;gap:8px}.Dp1_editInput{height:30px;padding:0 10px;border:1px solid var(--dsw-alias-border-l2);border-radius:8px;background:var(--dsw-alias-fill-l1);color:var(--dsw-alias-label-primary);font-size:13px;width:180px}@media (max-width:640px){.Dbg1_root{margin-top:80px}.Dp1_head{padding:24px 16px 16px}.Dp1_body{padding:0 16px 24px}.Dp1_twoCol{grid-template-columns:1fr;gap:0}.Dp1_stats{gap:20px;padding:12px 0}.Dp1_close{right:12px;top:12px}}";
+		const css2 = ".Dp1_backdrop{position:fixed;top:0;bottom:0;right:0;background:rgba(0,0,0,.32);z-index:60}.Dp1_panel{position:fixed;top:0;bottom:0;right:0;z-index:61;display:flex;flex-direction:column;background:var(--dsw-alias-bg-base);border-left:1px solid var(--dsw-alias-border-l1);box-shadow:var(--dsw-shadow-lv3);overflow-y:auto}.Dp1_head{display:flex;flex-direction:column;align-items:center;gap:8px;padding:32px 56px 22px;position:relative}.Dp1_avatar{width:64px;height:64px;border-radius:50%;background:var(--dsw-alias-fill-l2);color:var(--dsw-alias-label-primary);display:flex;align-items:center;justify-content:center;font-weight:700;font-size:24px;flex:none;border:2px solid var(--dsw-alias-border-l2)}.Dp1_name{font-size:18px;font-weight:600;color:var(--dsw-alias-label-primary)}.Dp1_key{font-family:var(--dsw-font-mono);color:var(--dsw-alias-label-tertiary);font-size:13px}.Dp1_modelLine{font-size:13px;color:var(--dsw-alias-label-secondary)}.Dp1_close{position:fixed;top:16px;right:16px;cursor:pointer;background:0 0;border:0;color:var(--dsw-alias-label-secondary);font-size:22px;line-height:1;z-index:62}.Dp1_body{padding:0 56px 36px;display:flex;flex-direction:column;gap:26px}.Dp1_stats{display:flex;align-items:center;justify-content:center;gap:56px;flex-wrap:wrap;padding:18px 0}.Dp1_statItem{display:flex;flex-direction:column;align-items:center;gap:4px}.Dp1_statValue{font-size:18px;font-weight:600;color:var(--dsw-alias-label-primary);font-variant-numeric:tabular-nums}.Dp1_statLabel{font-size:12px;color:var(--dsw-alias-label-tertiary)}.Dp1_sepBar{color:var(--dsw-alias-label-dimmed);font-size:14px}.Dp1_balance{display:flex;flex-wrap:wrap;gap:16px;justify-content:center;margin:0 auto}.Dp1_balanceBlock{position:relative;box-sizing:border-box;width:200px;background:rgba(127,127,127,.10);border-radius:14px;padding:10px 14px;display:flex;flex-direction:column;align-items:flex-start;gap:2px;height:80px}.Dp1_balanceBlockLabel{font-size:12px;color:var(--dsw-alias-label-tertiary)}.Dp1_balanceBlockValue{font-size:28px;font-weight:700;color:var(--dsw-alias-label-primary);font-variant-numeric:tabular-nums;margin-top:auto}.Dp1_balanceBlock .Dp1_btn{position:absolute;right:12px;top:10px;height:22px;padding:0 8px;font-size:12px}.Dp1_btn{display:inline-flex;align-items:center;justify-content:center;height:30px;padding:0 12px;border-radius:999px;border:1px solid var(--dsw-alias-border-l2);background:0 0;color:var(--dsw-alias-label-primary);cursor:pointer;font-size:13px}.Dp1_btn:hover{background:var(--dsw-alias-interactive-bg-hover)}.Dp1_btnPrimary{background:#4d6bfe;color:#fff;border:none}.Dp1_section{padding:16px 0}.Dp1_title{font-size:13px;color:var(--dsw-alias-label-secondary);margin:0 0 12px;font-weight:600;letter-spacing:.02em}.Dp1_row{display:flex;align-items:center;gap:8px;padding:7px 0}.Dp1_twoCol{display:grid;grid-template-columns:1fr 1fr;gap:0 80px;align-items:start}.Dp1_rowTitle{flex:1;min-width:0;color:var(--dsw-alias-label-primary);font-size:14px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}.Dp1_rowTitleGray{color:var(--dsw-alias-label-dimmed)}.Dp1_rowVal{color:var(--dsw-alias-label-secondary);font-variant-numeric:tabular-nums;font-size:13px;flex:none}.Dp1_rank{color:var(--dsw-alias-label-tertiary);width:18px;text-align:right;flex:none;font-size:13px}.Dp1_monthNav{display:flex;align-items:center;justify-content:center;gap:16px;margin-bottom:14px}.Dp1_monthGrids{display:flex;flex-wrap:wrap;gap:20px}.Dp1_monthGrids .Dp1_monthGroup{flex:1 1 260px;min-width:0}.Dp1_monthGroup{display:flex;flex-direction:column;align-items:center;gap:8px}.Dp1_monthGroupTitle{font-size:12px;color:var(--dsw-alias-label-tertiary)}.Dp1_grid{display:grid;grid-template-columns:repeat(7,1fr);gap:5px;width:100%;max-width:170px}.Dp1_cell{aspect-ratio:1;border-radius:6px;background:rgba(127,127,127,.08);display:flex;align-items:center;justify-content:center;font-size:10px;color:var(--dsw-alias-label-tertiary)}.Dp1_cellFlat{background:#60a5fa;color:#fff}.Dp1_cellPeak{background:#f97316;color:#fff}.Dp1_cellOff{background:#22c55e;color:#fff}.Dp1_cellBlue{color:#fff}.Dp1_legend{display:flex;gap:12px;margin-top:10px;justify-content:center;font-size:11px;color:var(--dsw-alias-label-tertiary);flex-wrap:wrap}.Dp1_dot{display:inline-block;width:8px;height:8px;border-radius:2px;margin-right:4px;vertical-align:middle}.Dp1_nameRow{display:flex;align-items:center;gap:6px}.Dp1_edit{border:0;background:0 0;cursor:pointer;color:var(--dsw-alias-label-tertiary);font-size:14px;padding:2px;line-height:1}.Dp1_edit:hover{color:var(--dsw-alias-label-primary)}.Dp1_editRow{display:flex;align-items:center;gap:8px}.Dp1_editInput{height:30px;padding:0 10px;border:1px solid var(--dsw-alias-border-l2);border-radius:8px;background:var(--dsw-alias-fill-l1);color:var(--dsw-alias-label-primary);font-size:13px;width:180px}@media (max-width:640px){.Dbg1_root{margin-top:80px}.Dp1_head{padding:24px 16px 16px}.Dp1_body{padding:0 16px 24px}.Dp1_twoCol{grid-template-columns:1fr;gap:0}.Dp1_stats{gap:20px;padding:12px 0}.Dp1_close{right:12px;top:12px}}";
 		const injectCss = (text, tagId) => {
 			if (typeof document !== "undefined" && document.querySelector("style[data-plugin-css=" + JSON.stringify(tagId) + "]") === null) {
 				const tag = document.createElement("style");
@@ -20,9 +20,13 @@ window.__ModuleLoader__.load({
 		injectCss(css, "@lancecheney/dsh-deepseek-balance/BillingBadge.css");
 		injectCss(css2, "@lancecheney/dsh-deepseek-balance/UsagePanel.css");
 		const C = { root: "Dbg1_root", num: "Dbg1_num", sep: "Dbg1_sep", chip: "Dbg1_chip", peak: "Dbg1_peak", offPeak: "Dbg1_offPeak", legacy: "Dbg1_legacy", dimmed: "Dbg1_dimmed", plus: "Dbg1_plus", unit: "Dbg1_unit" };
-		const P = { backdrop: "Dp1_backdrop", panel: "Dp1_panel", head: "Dp1_head", avatar: "Dp1_avatar", name: "Dp1_name", key: "Dp1_key", close: "Dp1_close", body: "Dp1_body", stats: "Dp1_stats", statItem: "Dp1_statItem", statValue: "Dp1_statValue", statLabel: "Dp1_statLabel", sepBar: "Dp1_sepBar", balance: "Dp1_balance", balanceBlock: "Dp1_balanceBlock", balanceBlockLabel: "Dp1_balanceBlockLabel", balanceBlockValue: "Dp1_balanceBlockValue", btn: "Dp1_btn", btnPrimary: "Dp1_btnPrimary", section: "Dp1_section", title: "Dp1_title", row: "Dp1_row", twoCol: "Dp1_twoCol", rowTitle: "Dp1_rowTitle", rowTitleGray: "Dp1_rowTitleGray", rowVal: "Dp1_rowVal", rank: "Dp1_rank", monthNav: "Dp1_monthNav", monthGrids: "Dp1_monthGrids", monthGroup: "Dp1_monthGroup", monthGroupTitle: "Dp1_monthGroupTitle", grid: "Dp1_grid", cell: "Dp1_cell", cellFlat: "Dp1_cellFlat", cellPeak: "Dp1_cellPeak", cellOff: "Dp1_cellOff", cellBlue: "Dp1_cellBlue", legend: "Dp1_legend", dot: "Dp1_dot", nameRow: "Dp1_nameRow", edit: "Dp1_edit", editRow: "Dp1_editRow", editInput: "Dp1_editInput" };
+		const P = { backdrop: "Dp1_backdrop", panel: "Dp1_panel", head: "Dp1_head", avatar: "Dp1_avatar", name: "Dp1_name", key: "Dp1_key", close: "Dp1_close", body: "Dp1_body", stats: "Dp1_stats", statItem: "Dp1_statItem", statValue: "Dp1_statValue", statLabel: "Dp1_statLabel", sepBar: "Dp1_sepBar", balance: "Dp1_balance", balanceBlock: "Dp1_balanceBlock", balanceBlockLabel: "Dp1_balanceBlockLabel", balanceBlockValue: "Dp1_balanceBlockValue", btn: "Dp1_btn", btnPrimary: "Dp1_btnPrimary", section: "Dp1_section", title: "Dp1_title", row: "Dp1_row", twoCol: "Dp1_twoCol", rowTitle: "Dp1_rowTitle", rowTitleGray: "Dp1_rowTitleGray", rowVal: "Dp1_rowVal", rank: "Dp1_rank", monthNav: "Dp1_monthNav", monthGrids: "Dp1_monthGrids", monthGroup: "Dp1_monthGroup", monthGroupTitle: "Dp1_monthGroupTitle", grid: "Dp1_grid", cell: "Dp1_cell", cellFlat: "Dp1_cellFlat", cellPeak: "Dp1_cellPeak", cellOff: "Dp1_cellOff", cellBlue: "Dp1_cellBlue", legend: "Dp1_legend", dot: "Dp1_dot", nameRow: "Dp1_nameRow", modelLine: "Dp1_modelLine", edit: "Dp1_edit", editRow: "Dp1_editRow", editInput: "Dp1_editInput" };
 
 		const MODEL_META = { "deepseek-v4-pro": { label: "DeepSeek-V4-Pro" }, "deepseek-flash": { label: "DeepSeek-Flash" }, "deepseek-v4-flash": { label: "DeepSeek-Flash" }, "deepseek-v4-flash-vision-exp": { label: "DeepSeek-Flash (vision)" } };
+		// Legacy ids that the provider still accepts but routes to the current model.
+		const MODEL_ALIASES = { "deepseek-v4-flash": "deepseek-flash", "deepseek-v4-flash-vision-exp": "deepseek-flash" };
+		function resolveModelId(raw) { if (typeof raw !== "string" || raw === "") return null; return MODEL_ALIASES[raw] || raw; }
+		function modelLabelOf(id) { return id ? ((MODEL_META[id] || {}).label || id) : "—"; }
 		const FALLBACK_PRICING = {
 			effectiveFrom: "2026-08-17T00:00:00+08:00",
 			weekendFrom: "2026-08-23T00:00:00+08:00",
@@ -53,7 +57,6 @@ window.__ModuleLoader__.load({
 				} }
 			}
 		};
-		const DEFAULT_MODEL = "deepseek-v4-pro";
 
 		function beijingDecimalHour(now) { let h = 0, m = 0; try { const p = new Intl.DateTimeFormat("en-GB", { timeZone: "Asia/Shanghai", hour12: false, hour: "2-digit", minute: "2-digit" }).formatToParts(now); for (const x of p) { if (x.type === "hour") h = Number(x.value); if (x.type === "minute") m = Number(x.value); } } catch { h = now.getHours(); m = now.getMinutes(); } return h + m / 60; }
 		function periodFor(now, effectiveFrom, weekendFrom) { const eff = Date.parse(effectiveFrom); if (Number.isFinite(eff) && now.getTime() < eff) return "legacy"; const wk = Date.parse(weekendFrom); const d = new Date(now.getTime() + 8 * 3600 * 1000); const day = d.getUTCDay(); if ((day === 0 || day === 6) && Number.isFinite(wk) && now.getTime() >= wk) return "offPeak"; const h = beijingDecimalHour(now); return (h >= 9 && h < 12) || (h >= 14 && h < 18) ? "peak" : "offPeak"; }
@@ -67,7 +70,6 @@ window.__ModuleLoader__.load({
 		function beijingMonthKey(ms) { return new Date(ms + 8 * 3600 * 1000).toISOString().slice(0, 7); }
 		function findFrame() { if (typeof document === "undefined") return null; const overlay = document.querySelector("[data-shell-overlay]"); return overlay && overlay.parentElement ? overlay.parentElement : null; }
 		function sidebarWidthOf(frame) { const col = frame && frame.firstElementChild; return col ? col.getBoundingClientRect().width : null; }
-		const noopSubscribe = () => () => {};
 		function dayColor(d) { if (!d || d.tokens <= 0) return "none"; if (d.flat >= d.peak && d.flat >= d.offPeak) return "flat"; return d.peak >= d.offPeak ? "peak" : "off"; }
 		function tokenBlue(tokens, max) { if (!tokens || tokens <= 0 || max <= 0) return null; const r = tokens / max; if (r < 0.2) return "#93c5fd"; if (r < 0.4) return "#60a5fa"; if (r < 0.6) return "#3b82f6"; if (r < 0.8) return "#2563eb"; return "#1e40af"; }
 		function monthGrid(year, month, daysData) {
@@ -84,10 +86,34 @@ window.__ModuleLoader__.load({
 		}
 
 		function BillingBadge(props) {
-			const directory = props.directory;
+			const directoryOf = typeof props.directoryOf === "function" ? props.directoryOf : null;
 			const sessionId = props.sessionId;
 			const [open, setOpen] = react.useState(false);
 			const [state, setState] = react.useState({ phase: "loading" });
+			// The slot's inject face is computed once per (entry, session), so a single
+			// failed directory lookup there would pin the badge to a wrong model for the
+			// whole page. Resolve lazily here and keep retrying until it attaches.
+			const directoryRef = react.useRef(props.directory || null);
+			const [, bumpModel] = react.useState(0);
+			react.useEffect(() => {
+				let alive = true; let stop = null; let timer = null; let tries = 0;
+				const attach = () => {
+					let d = null;
+					try { d = directoryOf ? directoryOf() : null; } catch { d = null; }
+					if (!d) return false;
+					directoryRef.current = d;
+					stop = d.subscribe(() => { if (alive) bumpModel((n) => n + 1); });
+					bumpModel((n) => n + 1);
+					return true;
+				};
+				if (!attach()) {
+					timer = setInterval(() => {
+						tries += 1;
+						if (attach() || tries >= 60) { clearInterval(timer); timer = null; }
+					}, 1000);
+				}
+				return () => { alive = false; if (timer) clearInterval(timer); if (stop) stop(); };
+			}, [directoryOf, sessionId]);
 
 			react.useEffect(() => {
 				let alive = true; let timer;
@@ -121,20 +147,23 @@ window.__ModuleLoader__.load({
 			const symbol = pricingSet.symbol || "¥";
 			const models = pricingSet.models || FALLBACK_PRICING.currencies.CNY.models;
 
-			const modelState = react.useSyncExternalStore(directory ? (fn) => directory.subscribe(fn) : noopSubscribe, () => (directory ? directory.getSnapshot() : null));
+			const directory = directoryRef.current;
+			const modelState = directory ? directory.getSnapshot() : null;
 			const currentSelection = modelState && modelState.current ? modelState.current : null;
-			const modelId = currentSelection && currentSelection.model ? currentSelection.model : DEFAULT_MODEL;
-			const reasoningEffort = currentSelection ? currentSelection.reasoningEffort : void 0;
+			// Live composer selection wins; otherwise fall back to the model recorded in
+			// the session log. Nothing known means an honest "—", never another model's price.
+			const modelId = resolveModelId(currentSelection && currentSelection.model) || resolveModelId(state.usage && state.usage.model) || null;
+			const reasoningEffort = (currentSelection && currentSelection.reasoningEffort) || (state.usage && state.usage.effort) || void 0;
 
 			const period = periodFor(new Date(), effectiveFrom, weekendFrom);
 			const isPeak = period === "peak";
 			const isLegacy = period === "legacy";
-			const model = models[modelId] || models[DEFAULT_MODEL] || FALLBACK_PRICING.currencies.CNY.models[DEFAULT_MODEL];
-			const eras = Array.isArray(model.eras) ? model.eras : [];
+			const model = modelId ? models[modelId] || null : null;
+			const eras = model && Array.isArray(model.eras) ? model.eras : [];
 			const nowMs = Date.now();
 			const era = eras.find((e) => e.from != null && nowMs >= Date.parse(e.from)) || eras[eras.length - 1] || model;
-			const p = (period === "peak" ? era.peak : period === "offPeak" ? era.offPeak : era.legacy) || era.peak || era.offPeak || era.legacy;
-			const outputPrice = fmtPrice(p ? p.output : "—");
+			const p = era ? (period === "peak" ? era.peak : period === "offPeak" ? era.offPeak : era.legacy) || era.peak || era.offPeak || era.legacy : null;
+			const outputPrice = p ? fmtPrice(p.output) : "—";
 			const cost = state.usage && state.usage.spend ? state.usage.spend.total : null;
 			const plus = reasoningEffort === "max" ? "++" : reasoningEffort === "off" ? "" : "+";
 			const periodClass = isLegacy ? C.legacy : isPeak ? C.peak : C.offPeak;
@@ -151,12 +180,12 @@ window.__ModuleLoader__.load({
 			segs.push(react.createElement("span", { key: "price" }, react.createElement("span", { className: C.unit }, symbol), outputPrice, react.createElement("span", { className: C.unit }, "/M"), plus !== "" ? react.createElement("span", { className: C.plus }, plus) : null));
 
 			return react.createElement(react.Fragment, null,
-				react.createElement("button", { type: "button", className: C.root, onClick: () => setOpen(true) }, segs),
-				open ? react.createElement(UsagePanel, { sessionId: props.sessionId, currency, symbol, pricing, effectiveFrom, tr, onClose: () => setOpen(false) }) : null
+				react.createElement("button", { type: "button", className: C.root, onClick: () => setOpen(true), title: `${tr("label.model")}: ${modelLabelOf(modelId)}${reasoningEffort ? " · " + reasoningEffort : ""}` }, segs),
+				open ? react.createElement(UsagePanel, { sessionId: props.sessionId, currency, symbol, pricing, effectiveFrom, tr, modelId, reasoningEffort, onClose: () => setOpen(false) }) : null
 			);
 		}
 
-		function UsagePanel({ currency, symbol, pricing, tr, onClose }) {
+		function UsagePanel({ currency, symbol, pricing, tr, modelId, reasoningEffort, onClose }) {
 			const [usageData, setUsageData] = react.useState(null);
 			const [balance, setBalance] = react.useState(null);
 			const [sidebarW, setSidebarW] = react.useState(280);
@@ -253,6 +282,7 @@ window.__ModuleLoader__.load({
 						react.createElement("div", { className: P.avatar }, tokenName.slice(0, 2).toUpperCase()),
 						editing ? react.createElement("div", { className: P.editRow }, react.createElement("input", { className: P.editInput, value: draft, onChange: (e) => setDraft(e.target.value), autoFocus: true }), react.createElement("button", { className: P.btn + " " + P.btnPrimary, onClick: saveName }, tr("panel.save"))) : react.createElement("div", { className: P.nameRow }, react.createElement("span", { className: P.name }, tokenName), react.createElement("button", { className: P.edit, onClick: () => { setDraft(tokenName); setEditing(true); } }, "✎")),
 						react.createElement("div", { className: P.key }, usageData && usageData.apiKeyPreview ? usageData.apiKeyPreview : tr("balance.unavailable")),
+						react.createElement("div", { className: P.modelLine, title: modelId || "" }, tr("label.model") + ": " + modelLabelOf(modelId) + (reasoningEffort ? " · " + reasoningEffort : "")),
 						react.createElement("button", { className: P.close, onClick: onClose }, "×")
 					),
 					react.createElement("div", { className: P.body },
@@ -371,10 +401,22 @@ window.__ModuleLoader__.load({
 				id: "deepseek-balance",
 				order: -100,
 				inject: (sessionId) => {
-					const models = ctx.get("modelDirectories");
-					let directory;
-					if (models && typeof models.directoryFor === "function") { try { directory = models.directoryFor(sessionId); } catch {} }
-					return { directory: directory ? directory.store : void 0, sessionId };
+					// Resolved lazily: this face is computed once per (entry, session), so a
+					// lookup that fails before the session scope exists must stay retryable.
+					let resolved = null;
+					const directoryOf = () => {
+						if (resolved) return resolved;
+						try {
+							const models = ctx.get("modelDirectories");
+							if (!models || typeof models.directoryFor !== "function") return null;
+							const directory = models.directoryFor(sessionId);
+							if (!directory || !directory.store) return null;
+							resolved = directory.store;
+							return resolved;
+						} catch { return null; }
+					};
+					const directory = directoryOf();
+					return { directoryOf, directory: directory || void 0, sessionId };
 				}
 			}, BillingBadge));
 		}
