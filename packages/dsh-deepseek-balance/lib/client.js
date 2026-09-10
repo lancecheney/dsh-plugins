@@ -22,13 +22,35 @@ window.__ModuleLoader__.load({
 		const C = { root: "Dbg1_root", num: "Dbg1_num", sep: "Dbg1_sep", chip: "Dbg1_chip", peak: "Dbg1_peak", offPeak: "Dbg1_offPeak", legacy: "Dbg1_legacy", dimmed: "Dbg1_dimmed", plus: "Dbg1_plus", unit: "Dbg1_unit" };
 		const P = { backdrop: "Dp1_backdrop", panel: "Dp1_panel", head: "Dp1_head", avatar: "Dp1_avatar", name: "Dp1_name", key: "Dp1_key", close: "Dp1_close", body: "Dp1_body", stats: "Dp1_stats", statItem: "Dp1_statItem", statValue: "Dp1_statValue", statLabel: "Dp1_statLabel", sepBar: "Dp1_sepBar", balance: "Dp1_balance", balanceBlock: "Dp1_balanceBlock", balanceBlockLabel: "Dp1_balanceBlockLabel", balanceBlockValue: "Dp1_balanceBlockValue", btn: "Dp1_btn", btnPrimary: "Dp1_btnPrimary", section: "Dp1_section", title: "Dp1_title", row: "Dp1_row", twoCol: "Dp1_twoCol", rowTitle: "Dp1_rowTitle", rowTitleGray: "Dp1_rowTitleGray", rowVal: "Dp1_rowVal", rank: "Dp1_rank", monthNav: "Dp1_monthNav", monthGrids: "Dp1_monthGrids", monthGroup: "Dp1_monthGroup", monthGroupTitle: "Dp1_monthGroupTitle", grid: "Dp1_grid", cell: "Dp1_cell", cellFlat: "Dp1_cellFlat", cellPeak: "Dp1_cellPeak", cellOff: "Dp1_cellOff", cellBlue: "Dp1_cellBlue", legend: "Dp1_legend", dot: "Dp1_dot", nameRow: "Dp1_nameRow", edit: "Dp1_edit", editRow: "Dp1_editRow", editInput: "Dp1_editInput" };
 
-		const MODEL_META = { "deepseek-v4-pro": { label: "DeepSeek-V4-Pro" }, "deepseek-v4-flash": { label: "DeepSeek-V4-Flash" } };
+		const MODEL_META = { "deepseek-v4-pro": { label: "DeepSeek-V4-Pro" }, "deepseek-flash": { label: "DeepSeek-Flash" }, "deepseek-v4-flash": { label: "DeepSeek-Flash" }, "deepseek-v4-flash-vision-exp": { label: "DeepSeek-Flash (vision)" } };
 		const FALLBACK_PRICING = {
 			effectiveFrom: "2026-08-17T00:00:00+08:00",
 			weekendFrom: "2026-08-23T00:00:00+08:00",
 			currencies: {
-				CNY: { symbol: "¥", models: { "deepseek-v4-pro": { legacy: { hit: 0.025, miss: 3.0, output: 6.0 }, peak: { hit: 0.30, miss: 9.0, output: 27.0 }, offPeak: { hit: 0.15, miss: 4.5, output: 13.5 } }, "deepseek-v4-flash": { legacy: { hit: 0.02, miss: 1.0, output: 2.0 }, peak: { hit: 0.10, miss: 3.0, output: 9.0 }, offPeak: { hit: 0.05, miss: 1.5, output: 4.5 } }, "deepseek-v4-flash-vision-exp": { legacy: { hit: 0.02, miss: 1.0, output: 2.0 }, peak: { hit: 0.10, miss: 3.0, output: 9.0 }, offPeak: { hit: 0.05, miss: 1.5, output: 4.5 } } } },
-				USD: { symbol: "$", models: { "deepseek-v4-pro": { legacy: { hit: 0.003625, miss: 0.435, output: 0.87 }, peak: { hit: 0.044, miss: 1.32, output: 3.96 }, offPeak: { hit: 0.022, miss: 0.66, output: 1.98 } }, "deepseek-v4-flash": { legacy: { hit: 0.0028, miss: 0.14, output: 0.28 }, peak: { hit: 0.014, miss: 0.44, output: 1.32 }, offPeak: { hit: 0.007, miss: 0.22, output: 0.66 } }, "deepseek-v4-flash-vision-exp": { legacy: { hit: 0.0028, miss: 0.14, output: 0.28 }, peak: { hit: 0.014, miss: 0.44, output: 1.32 }, offPeak: { hit: 0.007, miss: 0.22, output: 0.66 } } } }
+				CNY: { symbol: "¥", models: {
+					"deepseek-flash": { eras: [
+						{ from: "2026-09-10T12:00:00+08:00", offPeak: { hit: 0.02, miss: 1.0, output: 4.0 }, peak: { hit: 0.04, miss: 2.0, output: 8.0 } },
+						{ from: "2026-08-17T00:00:00+08:00", offPeak: { hit: 0.05, miss: 1.5, output: 4.5 }, peak: { hit: 0.10, miss: 3.0, output: 9.0 } },
+						{ from: null, legacy: { hit: 0.02, miss: 1.0, output: 2.0 } }
+					] },
+					"deepseek-v4-pro": { eras: [
+						{ from: "2026-09-14T12:00:00+08:00", offPeak: { hit: 0.02, miss: 1.0, output: 4.0 }, peak: { hit: 0.04, miss: 2.0, output: 8.0 } },
+						{ from: "2026-08-17T00:00:00+08:00", offPeak: { hit: 0.15, miss: 4.5, output: 13.5 }, peak: { hit: 0.30, miss: 9.0, output: 27.0 } },
+						{ from: null, legacy: { hit: 0.025, miss: 3.0, output: 6.0 } }
+					] }
+				} },
+				USD: { symbol: "$", models: {
+					"deepseek-flash": { eras: [
+						{ from: "2026-09-10T12:00:00+08:00", offPeak: { hit: 0.003, miss: 0.15, output: 0.6 }, peak: { hit: 0.006, miss: 0.3, output: 1.2 } },
+						{ from: "2026-08-17T00:00:00+08:00", offPeak: { hit: 0.007, miss: 0.22, output: 0.66 }, peak: { hit: 0.014, miss: 0.44, output: 1.32 } },
+						{ from: null, legacy: { hit: 0.0028, miss: 0.14, output: 0.28 } }
+					] },
+					"deepseek-v4-pro": { eras: [
+						{ from: "2026-09-14T12:00:00+08:00", offPeak: { hit: 0.003, miss: 0.15, output: 0.6 }, peak: { hit: 0.006, miss: 0.3, output: 1.2 } },
+						{ from: "2026-08-17T00:00:00+08:00", offPeak: { hit: 0.022, miss: 0.66, output: 1.98 }, peak: { hit: 0.044, miss: 1.32, output: 3.96 } },
+						{ from: null, legacy: { hit: 0.003625, miss: 0.435, output: 0.87 } }
+					] }
+				} }
 			}
 		};
 		const DEFAULT_MODEL = "deepseek-v4-pro";
@@ -108,8 +130,11 @@ window.__ModuleLoader__.load({
 			const isPeak = period === "peak";
 			const isLegacy = period === "legacy";
 			const model = models[modelId] || models[DEFAULT_MODEL] || FALLBACK_PRICING.currencies.CNY.models[DEFAULT_MODEL];
-			const p = (period === "peak" ? model.peak : period === "offPeak" ? model.offPeak : model.legacy) || model.peak;
-			const outputPrice = fmtPrice(p.output);
+			const eras = Array.isArray(model.eras) ? model.eras : [];
+			const nowMs = Date.now();
+			const era = eras.find((e) => e.from != null && nowMs >= Date.parse(e.from)) || eras[eras.length - 1] || model;
+			const p = (period === "peak" ? era.peak : period === "offPeak" ? era.offPeak : era.legacy) || era.peak || era.offPeak || era.legacy;
+			const outputPrice = fmtPrice(p ? p.output : "—");
 			const cost = state.usage && state.usage.spend ? state.usage.spend.total : null;
 			const plus = reasoningEffort === "max" ? "++" : reasoningEffort === "off" ? "" : "+";
 			const periodClass = isLegacy ? C.legacy : isPeak ? C.peak : C.offPeak;

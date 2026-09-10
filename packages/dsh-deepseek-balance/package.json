@@ -1,7 +1,7 @@
 {
   "name": "@lancecheney/dsh-deepseek-balance",
   "description": "Session-header DeepSeek API balance, per-conversation spend, and peak/off-peak pricing indicator",
-  "version": "0.1.2",
+  "version": "0.1.3",
   "type": "module",
   "main": "lib/index.js",
   "exports": {

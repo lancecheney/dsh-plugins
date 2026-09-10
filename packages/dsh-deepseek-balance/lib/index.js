@@ -1,5 +1,4 @@
 import { credentialRef } from "@deepseek-ai/dsh-credentials";
-import { settingsNamespace } from "@deepseek-ai/dsh-settings";
 import { z } from "zod";
 import { existsSync, mkdirSync, readFileSync, readdirSync, writeFileSync } from "node:fs";
 import { homedir } from "node:os";
@@ -26,7 +25,10 @@ const PRICING_CN_URL = "https://api-docs.deepseek.com/zh-cn/quick_start/pricing/
 const PRICING_US_URL = "https://api-docs.deepseek.com/quick_start/pricing/";
 const PRICING_FETCH_TIMEOUT_MS = 15000;
 
-/** Last-known-good prices: legacy + the 2026-08-17 peak/off-peak table, per currency. */
+/** Prices per currency. Each model carries an `eras` list (newest first): the
+ *  currently effective peak/off-peak table plus historical tiers, so tokens are
+ *  billed at the price in force when they were used. `from: null` is the
+ *  pre-peak/off-peak legacy (flat) tier. */
 const FALLBACK_PRICING = {
 	effectiveFrom: "2026-08-17T00:00:00+08:00",
 	weekendFrom: "2026-08-23T00:00:00+08:00",
@@ -34,45 +36,73 @@ const FALLBACK_PRICING = {
 		CNY: {
 			symbol: "¥",
 			models: {
-				"deepseek-v4-flash": {
-					legacy: { hit: 0.02, miss: 1.0, output: 2.0 },
-					peak: { hit: 0.10, miss: 3.0, output: 9.0 },
-					offPeak: { hit: 0.05, miss: 1.5, output: 4.5 }
+				"deepseek-flash": {
+					eras: [
+						{ from: "2026-09-10T12:00:00+08:00", offPeak: { hit: 0.02, miss: 1.0, output: 4.0 }, peak: { hit: 0.04, miss: 2.0, output: 8.0 } },
+						{ from: "2026-08-17T00:00:00+08:00", offPeak: { hit: 0.05, miss: 1.5, output: 4.5 }, peak: { hit: 0.10, miss: 3.0, output: 9.0 } },
+						{ from: null, legacy: { hit: 0.02, miss: 1.0, output: 2.0 } }
+					]
 				},
 				"deepseek-v4-pro": {
-					legacy: { hit: 0.025, miss: 3.0, output: 6.0 },
-					peak: { hit: 0.30, miss: 9.0, output: 27.0 },
-					offPeak: { hit: 0.15, miss: 4.5, output: 13.5 }
-				},
-				"deepseek-v4-flash-vision-exp": {
-					legacy: { hit: 0.02, miss: 1.0, output: 2.0 },
-					peak: { hit: 0.10, miss: 3.0, output: 9.0 },
-					offPeak: { hit: 0.05, miss: 1.5, output: 4.5 }
+					eras: [
+						{ from: "2026-09-14T12:00:00+08:00", offPeak: { hit: 0.02, miss: 1.0, output: 4.0 }, peak: { hit: 0.04, miss: 2.0, output: 8.0 } },
+						{ from: "2026-08-17T00:00:00+08:00", offPeak: { hit: 0.15, miss: 4.5, output: 13.5 }, peak: { hit: 0.30, miss: 9.0, output: 27.0 } },
+						{ from: null, legacy: { hit: 0.025, miss: 3.0, output: 6.0 } }
+					]
 				}
 			}
 		},
 		USD: {
 			symbol: "$",
 			models: {
-				"deepseek-v4-flash": {
-					legacy: { hit: 0.0028, miss: 0.14, output: 0.28 },
-					peak: { hit: 0.014, miss: 0.44, output: 1.32 },
-					offPeak: { hit: 0.007, miss: 0.22, output: 0.66 }
+				"deepseek-flash": {
+					eras: [
+						{ from: "2026-09-10T12:00:00+08:00", offPeak: { hit: 0.003, miss: 0.15, output: 0.6 }, peak: { hit: 0.006, miss: 0.3, output: 1.2 } },
+						{ from: "2026-08-17T00:00:00+08:00", offPeak: { hit: 0.007, miss: 0.22, output: 0.66 }, peak: { hit: 0.014, miss: 0.44, output: 1.32 } },
+						{ from: null, legacy: { hit: 0.0028, miss: 0.14, output: 0.28 } }
+					]
 				},
 				"deepseek-v4-pro": {
-					legacy: { hit: 0.003625, miss: 0.435, output: 0.87 },
-					peak: { hit: 0.044, miss: 1.32, output: 3.96 },
-					offPeak: { hit: 0.022, miss: 0.66, output: 1.98 }
-				},
-				"deepseek-v4-flash-vision-exp": {
-					legacy: { hit: 0.0028, miss: 0.14, output: 0.28 },
-					peak: { hit: 0.014, miss: 0.44, output: 1.32 },
-					offPeak: { hit: 0.007, miss: 0.22, output: 0.66 }
+					eras: [
+						{ from: "2026-09-14T12:00:00+08:00", offPeak: { hit: 0.003, miss: 0.15, output: 0.6 }, peak: { hit: 0.006, miss: 0.3, output: 1.2 } },
+						{ from: "2026-08-17T00:00:00+08:00", offPeak: { hit: 0.022, miss: 0.66, output: 1.98 }, peak: { hit: 0.044, miss: 1.32, output: 3.96 } },
+						{ from: null, legacy: { hit: 0.003625, miss: 0.435, output: 0.87 } }
+					]
 				}
 			}
 		}
 	}
 };
+
+/** Legacy model names retired/renamed by DeepSeek; their requests are served by
+ *  DeepSeek-V4.1-Flash and billed at the Flash price. */
+const MODEL_ALIASES = {
+	"deepseek-v4-flash": "deepseek-flash",
+	"deepseek-v4-flash-vision-exp": "deepseek-flash"
+};
+
+function resolveModelId(rawModel) {
+	const id = typeof rawModel === "string" && rawModel.length > 0 ? rawModel : "";
+	return MODEL_ALIASES[id] || id;
+}
+
+/** Index of the price era in force at `time` (eras are newest-first). */
+function priceEraIndex(modelId, time) {
+	const m = FALLBACK_PRICING.currencies.CNY.models[modelId];
+	if (!m || !Array.isArray(m.eras)) return 0;
+	for (let i = 0; i < m.eras.length; i++) {
+		const from = m.eras[i].from;
+		if (from === null || from === void 0 || time >= Date.parse(from)) return i;
+	}
+	return m.eras.length - 1;
+}
+
+/** Price era for a model at `time`, falling back to legacy/flat when unknown. */
+function priceEraAt(modelId, time) {
+	const m = FALLBACK_PRICING.currencies.CNY.models[modelId];
+	if (!m || !Array.isArray(m.eras)) return null;
+	return m.eras[priceEraIndex(modelId, time)] || null;
+}
 
 function json(res, status, body) {
 	const payload = JSON.stringify(body);
@@ -87,7 +117,7 @@ function resolveSettingsSection(ctx) {
 	try {
 		const settings = ctx.get("settings");
 		if (settings && typeof settings.get === "function") {
-			return settings.get(settingsNamespace("llm-deepseek"));
+			return settings.get("llm-deepseek");
 		}
 	} catch {}
 	return void 0;
@@ -147,16 +177,16 @@ const number = (match, index) => {
 	return Number.isFinite(value) ? value : void 0;
 };
 
-/** Parse the zh-CN docs page: CNY peak/off-peak table (3 columns). */
+/** Parse the zh-CN docs page: CNY peak/off-peak table (2 columns: flash, pro). */
 function parseCnPricing(html) {
 	const text = stripTags(html);
 	const grab = (label) => {
-		const re = new RegExp(label + "\\s*空闲时段\\s*([\\d.]+)元\\s*([\\d.]+)元\\s*([\\d.]+)元\\s*高峰时段\\s*([\\d.]+)元\\s*([\\d.]+)元\\s*([\\d.]+)元");
+		const re = new RegExp(label + "\\s*空闲时段\\s*([\\d.]+)元\\s*([\\d.]+)元\\s*高峰时段\\s*([\\d.]+)元\\s*([\\d.]+)元");
 		const m = text.match(re);
 		if (!m) return void 0;
 		return {
-			offPeak: [number(m, 1), number(m, 2), number(m, 3)],
-			peak: [number(m, 4), number(m, 5), number(m, 6)]
+			offPeak: [number(m, 1), number(m, 2)],
+			peak: [number(m, 3), number(m, 4)]
 		};
 	};
 	const hit = grab("百万tokens输入\\s*（缓存命中）");
@@ -171,23 +201,22 @@ function parseCnPricing(html) {
 
 	return {
 		models: {
-			"deepseek-v4-flash": mk(0),
-			"deepseek-v4-pro": mk(1),
-			"deepseek-v4-flash-vision-exp": mk(2)
+			"deepseek-flash": mk(0),
+			"deepseek-v4-pro": mk(1)
 		}
 	};
 }
 
-/** Parse the English docs page: USD peak/off-peak table (3 columns). */
+/** Parse the English docs page: USD peak/off-peak table (2 columns: flash, pro). */
 function parseUsModels(html) {
 	const text = stripTags(html);
 	const grab = (label) => {
-		const re = new RegExp(label + "\\s+OFF-PEAK\\s+\\$([\\d.]+)\\s+\\$([\\d.]+)\\s+\\$([\\d.]+)\\s+PEAK\\s+\\$([\\d.]+)\\s+\\$([\\d.]+)\\s+\\$([\\d.]+)", "i");
+		const re = new RegExp(label + "\\s+OFF-PEAK\\s+\\$([\\d.]+)\\s+\\$([\\d.]+)\\s+PEAK\\s+\\$([\\d.]+)\\s+\\$([\\d.]+)", "i");
 		const m = text.match(re);
 		if (!m) return void 0;
 		return {
-			offPeak: [number(m, 1), number(m, 2), number(m, 3)],
-			peak: [number(m, 4), number(m, 5), number(m, 6)]
+			offPeak: [number(m, 1), number(m, 2)],
+			peak: [number(m, 3), number(m, 4)]
 		};
 	};
 	const hit = grab("1M INPUT TOKENS\\s*\\(CACHE HIT\\)");
@@ -202,9 +231,8 @@ function parseUsModels(html) {
 
 	return {
 		models: {
-			"deepseek-v4-flash": mk(0),
-			"deepseek-v4-pro": mk(1),
-			"deepseek-v4-flash-vision-exp": mk(2)
+			"deepseek-flash": mk(0),
+			"deepseek-v4-pro": mk(1)
 		}
 	};
 }
@@ -212,15 +240,26 @@ function parseUsModels(html) {
 const pricing = { data: FALLBACK_PRICING, fetchedAt: 0, source: "fallback" };
 let pricingRefresh = null;
 
+/** Merge freshly parsed current prices into the era in force right now. */
 function mergeLegacy(models, fallbackModels) {
 	const result = {};
-	for (const [id, m] of Object.entries(models)) {
-		const fb = fallbackModels[id];
-		result[id] = {
-			...(fb && fb.legacy ? { legacy: fb.legacy } : {}),
-			peak: m.peak,
-			offPeak: m.offPeak
-		};
+	const now = Date.now();
+	for (const [id, fb] of Object.entries(fallbackModels)) {
+		const parsed = models[id];
+		if (!parsed || !Array.isArray(fb.eras)) {
+			result[id] = fb;
+			continue;
+		}
+		let curIdx = fb.eras.length - 1;
+		for (let i = 0; i < fb.eras.length; i++) {
+			const from = fb.eras[i].from;
+			if (from !== null && from !== void 0 && now >= Date.parse(from)) {
+				curIdx = i;
+				break;
+			}
+		}
+		const eras = fb.eras.map((era, i) => (i === curIdx ? { ...era, peak: parsed.peak, offPeak: parsed.offPeak } : era));
+		result[id] = { ...fb, eras };
 	}
 	return result;
 }
@@ -460,13 +499,16 @@ function aggregateSessions(archivedIds = []) {
 				else if (r.type === "assistant/chunk" && r.data?.chunk?.type === "usage") usage = r.data.chunk.usage;
 				if (usage && time !== null && dedupe.has(r)) {
 					const t = (usage.inputTokens ?? 0) + (usage.outputTokens ?? 0) + (usage.cacheReadTokens ?? 0);
-					const period = periodOfUsage(time, effectiveFromMs, weekendFromMs);
+					const modelId = resolveModelId(model);
+					const eraIdx = priceEraIndex(modelId, time);
+					const era = priceEraAt(modelId, time);
+					const period = era && era.legacy ? "flat" : periodOfUsage(time, effectiveFromMs, weekendFromMs);
 					const dayKey = beijingDayKey(time);
 					tokens += t;
 					if (period === "peak") peakTokens += t;
 					else if (period === "offPeak") offPeakTokens += t;
 					else flatTokens += t;
-					const mkModel = model ?? "";
+					const mkModel = `${modelId}@${eraIdx}`;
 					const b = bucketsFrom(usage);
 					dayTokens[dayKey] = dayTokens[dayKey] || {};
 					dayTokens[dayKey][mkModel] = dayTokens[dayKey][mkModel] || { flat: zeroBucket(), peak: zeroBucket(), offPeak: zeroBucket() };
@@ -565,10 +607,9 @@ function computeSpend(summary, currency = "CNY") {
 		pricing.data.currencies?.CNY ||
 		FALLBACK_PRICING.currencies.CNY;
 	const models = pricingSet.models || {};
-	const defaultModel = models[DEFAULT_MODEL] || { legacy: null, peak: { miss: 0, hit: 0, output: 0 }, offPeak: { miss: 0, hit: 0, output: 0 } };
 	const priceOf = (tokens, price) => (tokens || 0) * (price || 0) / 1e6;
-	const bucketCost = (b, mm) => {
-		if (!mm) return 0;
+	const eraCost = (b, era) => {
+		if (!era) return 0;
 		const cost = (bucket, price) => {
 			if (!price) return 0;
 			return priceOf(bucket.uncachedInputTokens, price.miss)
@@ -576,22 +617,30 @@ function computeSpend(summary, currency = "CNY") {
 				+ priceOf(bucket.cacheReadTokens, price.hit)
 				+ priceOf(bucket.outputTokens, price.output);
 		};
-		return (mm.legacy ? cost(b.flat, mm.legacy) : 0) + cost(b.peak, mm.peak) + cost(b.offPeak, mm.offPeak);
+		if (era.legacy) return cost(b.flat, era.legacy);
+		return cost(b.peak, era.peak) + cost(b.offPeak, era.offPeak);
+	};
+	// Bucket keys are `${modelId}@${eraIndex}` so each token is billed at the
+	// price era in force when it was used.
+	const bucketCost = (b, key) => {
+		const at = typeof key === "string" ? key.lastIndexOf("@") : -1;
+		if (at < 0) return 0;
+		const modelId = key.slice(0, at);
+		const eraIdx = Number(key.slice(at + 1));
+		const mm = models[modelId];
+		if (!mm || !Array.isArray(mm.eras)) return 0;
+		const era = mm.eras[Number.isFinite(eraIdx) ? eraIdx : 0] || mm.eras[mm.eras.length - 1];
+		return eraCost(b, era);
 	};
 	let total = 0;
 	for (const [k, b] of Object.entries(summary.byModel || {})) {
-		const [m] = k.split("|");
-		total += bucketCost(b, models[m] || defaultModel);
+		total += bucketCost(b, k);
 	}
 	const day = (summary.days || {})[beijingDayKey(Date.now())];
 	let today = null;
 	if (day) {
-		if (day.byModel) {
-			today = 0;
-			for (const [m, b] of Object.entries(day.byModel)) today += bucketCost(b, models[m] || defaultModel);
-		} else {
-			today = bucketCost(day, defaultModel);
-		}
+		today = 0;
+		for (const [k, b] of Object.entries(day.byModel || {})) today += bucketCost(b, k);
 	}
 	return { total, today, currency };
 }
