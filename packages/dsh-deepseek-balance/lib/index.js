@@ -1,0 +1,899 @@
+import { credentialRef } from "@deepseek-ai/dsh-credentials";
+import { z } from "zod";
+import { existsSync, mkdirSync, readFileSync, readdirSync, writeFileSync } from "node:fs";
+import { homedir } from "node:os";
+import { join } from "node:path";
+import { zstdDecompressSync } from "node:zlib";
+
+import { PEAK_SCHEME_FROM, PEAK_WINDOWS, WEEKEND_RULE_FROM, periodOfUsage } from "./peak.js";
+
+/**
+ * @user-7392/dsh-deepseek-balance — host half.
+ * - `/api/deepseek-balance` proxies DeepSeek `GET /user/balance` (carries the account currency).
+ * - `/api/deepseek-pricing` serves CNY + USD price tables, refreshed daily at
+ *   01:00 Beijing time from the official docs, with a hardcoded fallback.
+ */
+
+const name = "deepseek-balance";
+const inject = ["webServer", "credentials", "settings"];
+const Config = z.object({
+	tokenName: z.string().default("API key")
+}).default({ tokenName: "API key" });
+
+const DEFAULT_BASE_URL = "https://api.deepseek.com";
+const DEFAULT_KEY_ENV = "DEEPSEEK_API_KEY";
+const UPSTREAM_TIMEOUT_MS = 8000;
+const PRICING_CN_URL = "https://api-docs.deepseek.com/zh-cn/quick_start/pricing/";
+const PRICING_US_URL = "https://api-docs.deepseek.com/quick_start/pricing/";
+const PRICING_FETCH_TIMEOUT_MS = 15000;
+
+/** Prices per currency. Each model carries an `eras` list (newest first): the
+ *  currently effective peak/off-peak table plus historical tiers, so tokens are
+ *  billed at the price in force when they were used. `from: null` is the
+ *  pre-peak/off-peak legacy (flat) tier. */
+const FALLBACK_PRICING = {
+	effectiveFrom: PEAK_SCHEME_FROM,
+	weekendFrom: WEEKEND_RULE_FROM,
+	currencies: {
+		CNY: {
+			symbol: "¥",
+			models: {
+				"deepseek-flash": {
+					eras: [
+						{ from: "2026-09-10T12:00:00+08:00", offPeak: { hit: 0.02, miss: 1.0, output: 4.0 }, peak: { hit: 0.04, miss: 2.0, output: 8.0 } },
+						{ from: "2026-08-17T00:00:00+08:00", offPeak: { hit: 0.05, miss: 1.5, output: 4.5 }, peak: { hit: 0.10, miss: 3.0, output: 9.0 } },
+						{ from: null, legacy: { hit: 0.02, miss: 1.0, output: 2.0 } }
+					]
+				},
+				"deepseek-v4-pro": {
+					eras: [
+						{ from: "2026-08-17T00:00:00+08:00", offPeak: { hit: 0.15, miss: 4.5, output: 13.5 }, peak: { hit: 0.30, miss: 9.0, output: 27.0 } },
+						{ from: null, legacy: { hit: 0.025, miss: 3.0, output: 6.0 } }
+					]
+				}
+			}
+		},
+		USD: {
+			symbol: "$",
+			models: {
+				"deepseek-flash": {
+					eras: [
+						{ from: "2026-09-10T12:00:00+08:00", offPeak: { hit: 0.003, miss: 0.15, output: 0.6 }, peak: { hit: 0.006, miss: 0.3, output: 1.2 } },
+						{ from: "2026-08-17T00:00:00+08:00", offPeak: { hit: 0.007, miss: 0.22, output: 0.66 }, peak: { hit: 0.014, miss: 0.44, output: 1.32 } },
+						{ from: null, legacy: { hit: 0.0028, miss: 0.14, output: 0.28 } }
+					]
+				},
+				"deepseek-v4-pro": {
+					eras: [
+						{ from: "2026-08-17T00:00:00+08:00", offPeak: { hit: 0.022, miss: 0.66, output: 1.98 }, peak: { hit: 0.044, miss: 1.32, output: 3.96 } },
+						{ from: null, legacy: { hit: 0.003625, miss: 0.435, output: 0.87 } }
+					]
+				}
+			}
+		}
+	}
+};
+
+/** Legacy model names retired/renamed by DeepSeek; their requests are served by
+ *  DeepSeek-V4.1-Flash and billed at the Flash price. */
+const MODEL_ALIASES = {
+	"deepseek-v4-flash": "deepseek-flash",
+	"deepseek-v4-flash-vision-exp": "deepseek-flash"
+};
+
+function resolveModelId(rawModel) {
+	const id = typeof rawModel === "string" && rawModel.length > 0 ? rawModel : "";
+	return MODEL_ALIASES[id] || id;
+}
+
+/** Index of the price era in force at `time` (eras are newest-first). */
+function priceEraIndex(modelId, time) {
+	const m = FALLBACK_PRICING.currencies.CNY.models[modelId];
+	if (!m || !Array.isArray(m.eras)) return 0;
+	for (let i = 0; i < m.eras.length; i++) {
+		const from = m.eras[i].from;
+		if (from === null || from === void 0 || time >= Date.parse(from)) return i;
+	}
+	return m.eras.length - 1;
+}
+
+/** Price era for a model at `time`, falling back to legacy/flat when unknown. */
+function priceEraAt(modelId, time) {
+	const m = FALLBACK_PRICING.currencies.CNY.models[modelId];
+	if (!m || !Array.isArray(m.eras)) return null;
+	return m.eras[priceEraIndex(modelId, time)] || null;
+}
+
+function json(res, status, body) {
+	const payload = JSON.stringify(body);
+	res.writeHead(status, {
+		"content-type": "application/json; charset=utf-8",
+		"cache-control": "no-store"
+	});
+	res.end(payload);
+}
+
+function resolveSettingsSection(ctx) {
+	try {
+		const settings = ctx.get("settings");
+		if (settings && typeof settings.get === "function") {
+			return settings.get("llm-deepseek");
+		}
+	} catch {}
+	return void 0;
+}
+
+async function resolveDeepSeekFacts(ctx) {
+	const section = resolveSettingsSection(ctx);
+	const apiKeyEnv =
+		section && typeof section === "object" && typeof section.apiKeyEnv === "string" && section.apiKeyEnv.length > 0
+			? section.apiKeyEnv
+			: DEFAULT_KEY_ENV;
+	const baseURL =
+		(section && typeof section === "object" && typeof section.baseURL === "string" && section.baseURL.length > 0
+			? section.baseURL
+			: process.env.DEEPSEEK_BASE_URL) || DEFAULT_BASE_URL;
+
+	let apiKey;
+	const credentials = ctx.get("credentials");
+	if (credentials && typeof credentials.resolve === "function") {
+		try {
+			const hit = await credentials.resolve(credentialRef(apiKeyEnv));
+			if (hit && hit.value) apiKey = hit.value;
+		} catch {}
+	}
+	if (!apiKey) apiKey = process.env[apiKeyEnv];
+	if (!apiKey) throw new Error(`no DeepSeek API key (resolve ${apiKeyEnv} through credentials or env)`);
+
+	return { apiKey, baseURL: String(baseURL).replace(/\/+$/, "") };
+}
+
+function isTrustedRead(req) {
+	if (req.headers["sec-fetch-site"] === "cross-site") return false;
+	const origin = req.headers.origin;
+	if (origin === void 0) return true;
+	try {
+		const originHost = new URL(origin).host;
+		const host = req.headers.host ?? "";
+		const hostWithoutPort = host.replace(/:\d+$/, "");
+		return originHost === hostWithoutPort || originHost.replace(/:\d+$/, "") === hostWithoutPort;
+	} catch {
+		return false;
+	}
+}
+
+function stripTags(html) {
+	return html
+		.replace(/<script[\s\S]*?<\/script>/gi, " ")
+		.replace(/<style[\s\S]*?<\/style>/gi, " ")
+		.replace(/<[^>]+>/g, " ")
+		.replace(/&nbsp;/g, " ")
+		.replace(/&amp;/g, "&")
+		.replace(/\s+/g, " ");
+}
+
+const number = (match, index) => {
+	const value = Number(match[index]);
+	return Number.isFinite(value) ? value : void 0;
+};
+
+/** Parse the zh-CN docs page: CNY peak/off-peak table (2 columns: flash, pro). */
+function parseCnPricing(html) {
+	const text = stripTags(html);
+	const grab = (label) => {
+		const re = new RegExp(label + "\\s*空闲时段\\s*([\\d.]+)元\\s*([\\d.]+)元\\s*高峰时段\\s*([\\d.]+)元\\s*([\\d.]+)元");
+		const m = text.match(re);
+		if (!m) return void 0;
+		return {
+			offPeak: [number(m, 1), number(m, 2)],
+			peak: [number(m, 3), number(m, 4)]
+		};
+	};
+	const hit = grab("百万tokens输入\\s*（缓存命中）");
+	const miss = grab("百万tokens输入\\s*（缓存未命中）");
+	const out = grab("百万tokens输出");
+	if (!hit || !miss || !out) throw new Error("CNY peak/off-peak table not found");
+
+	const mk = (i) => ({
+		offPeak: { hit: hit.offPeak[i], miss: miss.offPeak[i], output: out.offPeak[i] },
+		peak: { hit: hit.peak[i], miss: miss.peak[i], output: out.peak[i] }
+	});
+
+	return {
+		models: {
+			"deepseek-flash": mk(0),
+			"deepseek-v4-pro": mk(1)
+		}
+	};
+}
+
+/** Parse the English docs page: USD peak/off-peak table (2 columns: flash, pro). */
+function parseUsModels(html) {
+	const text = stripTags(html);
+	const grab = (label) => {
+		const re = new RegExp(label + "\\s+OFF-PEAK\\s+\\$([\\d.]+)\\s+\\$([\\d.]+)\\s+PEAK\\s+\\$([\\d.]+)\\s+\\$([\\d.]+)", "i");
+		const m = text.match(re);
+		if (!m) return void 0;
+		return {
+			offPeak: [number(m, 1), number(m, 2)],
+			peak: [number(m, 3), number(m, 4)]
+		};
+	};
+	const hit = grab("1M INPUT TOKENS\\s*\\(CACHE HIT\\)");
+	const miss = grab("1M INPUT TOKENS\\s*\\(CACHE MISS\\)");
+	const out = grab("1M OUTPUT TOKENS");
+	if (!hit || !miss || !out) throw new Error("USD peak/off-peak table not found");
+
+	const mk = (i) => ({
+		offPeak: { hit: hit.offPeak[i], miss: miss.offPeak[i], output: out.offPeak[i] },
+		peak: { hit: hit.peak[i], miss: miss.peak[i], output: out.peak[i] }
+	});
+
+	return {
+		models: {
+			"deepseek-flash": mk(0),
+			"deepseek-v4-pro": mk(1)
+		}
+	};
+}
+
+const pricing = { data: FALLBACK_PRICING, fetchedAt: 0, source: "fallback" };
+let pricingRefresh = null;
+
+/** Merge freshly parsed current prices into the era in force right now. */
+function mergeLegacy(models, fallbackModels) {
+	const result = {};
+	const now = Date.now();
+	for (const [id, fb] of Object.entries(fallbackModels)) {
+		const parsed = models[id];
+		if (!parsed || !Array.isArray(fb.eras)) {
+			result[id] = fb;
+			continue;
+		}
+		let curIdx = fb.eras.length - 1;
+		for (let i = 0; i < fb.eras.length; i++) {
+			const from = fb.eras[i].from;
+			if (from !== null && from !== void 0 && now >= Date.parse(from)) {
+				curIdx = i;
+				break;
+			}
+		}
+		const eras = fb.eras.map((era, i) => (i === curIdx ? { ...era, peak: parsed.peak, offPeak: parsed.offPeak } : era));
+		result[id] = { ...fb, eras };
+	}
+	return result;
+}
+
+async function refreshPricing(ctx) {
+	if (pricingRefresh) return pricingRefresh;
+	pricingRefresh = (async () => {
+		const warn = (message) => {
+			if (ctx?.logger?.warn) ctx.logger.warn(`deepseek-balance: ${message}`);
+		};
+		let effectiveFrom = FALLBACK_PRICING.effectiveFrom;
+		let weekendFrom = FALLBACK_PRICING.weekendFrom;
+		let cnModels = FALLBACK_PRICING.currencies.CNY.models;
+		let usModels = FALLBACK_PRICING.currencies.USD.models;
+		try {
+			const [cnRes, usRes] = await Promise.all([
+				fetch(PRICING_CN_URL, { signal: AbortSignal.timeout(PRICING_FETCH_TIMEOUT_MS), headers: { accept: "text/html" } }),
+				fetch(PRICING_US_URL, { signal: AbortSignal.timeout(PRICING_FETCH_TIMEOUT_MS), headers: { accept: "text/html" } })
+			]);
+			if (cnRes.ok) {
+				try {
+					const parsed = parseCnPricing(await cnRes.text());
+					cnModels = mergeLegacy(parsed.models, FALLBACK_PRICING.currencies.CNY.models);
+				} catch (error) {
+					warn(`CNY pricing parse failed: ${error instanceof Error ? error.message : String(error)}`);
+				}
+			} else {
+				warn(`CNY pricing docs HTTP ${cnRes.status}`);
+			}
+			if (usRes.ok) {
+				try {
+					const parsed = parseUsModels(await usRes.text());
+					usModels = mergeLegacy(parsed.models, FALLBACK_PRICING.currencies.USD.models);
+				} catch (error) {
+					warn(`USD pricing parse failed: ${error instanceof Error ? error.message : String(error)}`);
+				}
+			} else {
+				warn(`USD pricing docs HTTP ${usRes.status}`);
+			}
+			pricing.data = {
+				effectiveFrom,
+				weekendFrom,
+				currencies: {
+					CNY: { symbol: "¥", models: cnModels },
+					USD: { symbol: "$", models: usModels }
+				}
+			};
+			pricing.fetchedAt = Date.now();
+			pricing.source = "docs";
+		} catch (error) {
+			warn(`pricing refresh failed (keeping fallback): ${error instanceof Error ? error.message : String(error)}`);
+		} finally {
+			pricingRefresh = null;
+		}
+	})();
+	return pricingRefresh;
+}
+
+function msUntilNextHourBeijing(hour) {
+	const now = new Date();
+	const beijing = new Date(now.getTime() + 8 * 3600 * 1000);
+	const bHour = beijing.getUTCHours();
+	const bMinute = beijing.getUTCMinutes();
+	const bSecond = beijing.getUTCSeconds();
+	const bMs = beijing.getUTCMilliseconds();
+	let deltaHours = hour - bHour;
+	if (deltaHours < 0 || (deltaHours === 0 && (bMinute > 0 || bSecond > 0 || bMs > 0))) deltaHours += 24;
+	return deltaHours * 3600 * 1000 - bMinute * 60 * 1000 - bSecond * 1000 - bMs;
+}
+
+const zeroBucket = () => ({ uncachedInputTokens: 0, outputTokens: 0, cacheReadTokens: 0, cacheWriteTokens: 0 });
+
+const bucketsFrom = (usage) => ({
+	uncachedInputTokens: usage.inputTokens,
+	outputTokens: usage.outputTokens,
+	cacheReadTokens: usage.cacheReadTokens ?? 0,
+	cacheWriteTokens: usage.cacheWriteTokens ?? 0
+});
+
+const addBucket = (total, delta) => ({
+	uncachedInputTokens: total.uncachedInputTokens + delta.uncachedInputTokens,
+	outputTokens: total.outputTokens + delta.outputTokens,
+	cacheReadTokens: total.cacheReadTokens + delta.cacheReadTokens,
+	cacheWriteTokens: total.cacheWriteTokens + delta.cacheWriteTokens
+});
+
+const ZSTD_MAGIC = 4247762216;
+
+function scanZstdFrames(buffer) {
+	const frames = [];
+	let offset = 0;
+	while (offset < buffer.length) {
+		const start = offset;
+		if (buffer.length - offset < 4) break;
+		if (buffer.readUInt32LE(offset) !== ZSTD_MAGIC) break;
+		offset += 4;
+		const descriptor = buffer.readUInt8(offset);
+		offset += 1;
+		const contentSizeFlag = descriptor >>> 6;
+		const singleSegment = (descriptor & 32) !== 0;
+		const checksum = (descriptor & 4) !== 0;
+		const dictionaryFlag = descriptor & 3;
+		const dictionaryBytes = dictionaryFlag === 3 ? 4 : dictionaryFlag;
+		const contentSizeBytes = contentSizeFlag === 0 ? (singleSegment ? 1 : 0) : (1 << contentSizeFlag);
+		offset += (singleSegment ? 0 : 1) + dictionaryBytes + contentSizeBytes;
+		for (;;) {
+			const blockHeader = buffer.readUIntLE(offset, 3);
+			offset += 3;
+			const lastBlock = (blockHeader & 1) !== 0;
+			const blockType = (blockHeader >>> 1) & 3;
+			const blockSize = blockHeader >>> 3;
+			offset += blockType === 1 ? 1 : blockSize;
+			if (lastBlock) break;
+		}
+		if (checksum) offset += 4;
+		frames.push({ start, end: offset });
+	}
+	return frames;
+}
+
+function dshHome() {
+	return process.env.DSH_HOME || join(homedir(), ".dsh");
+}
+
+function beijingDayKey(ms) {
+	return new Date(ms + 8 * 3600 * 1000).toISOString().slice(0, 10);
+}
+
+function readSessionRecords(path) {
+	const buf = readFileSync(path);
+	let text;
+	if (path.endsWith(".zstd")) {
+		const parts = [];
+		for (const frame of scanZstdFrames(buf)) parts.push(zstdDecompressSync(buf.subarray(frame.start, frame.end)).toString("utf8"));
+		text = parts.join("");
+	} else {
+		text = buf.toString("utf8");
+	}
+	const records = [];
+	for (const line of text.split("\n")) {
+		const t = line.trim();
+		if (t === "") continue;
+		try { records.push(JSON.parse(t)); } catch {}
+	}
+	return records;
+}
+
+/**
+ * Resolve one session's event log. DSH rewrites a session's whole history into
+ * a versioned log (`session.v4.jsonl.zstd`, before that `session.v3.jsonl.zstd`)
+ * while the legacy `session.jsonl.zstd` stays frozen at the upgrade. Every
+ * rewrite is a complete superset of the previous one, so the highest version
+ * present wins and only that file is read — reading two would double count.
+ */
+function sessionLogPath(sPath) {
+	const names = [];
+	for (let v = 9; v >= 3; v--) names.push(`session.v${v}.jsonl.zstd`);
+	names.push("session.jsonl.zstd");
+	for (let v = 9; v >= 3; v--) names.push(`session.v${v}.jsonl`);
+	names.push("session.jsonl");
+	for (const name of names) {
+		const p = join(sPath, name);
+		if (existsSync(p)) return p;
+	}
+	return null;
+}
+
+/** Whether two model selections are the same provider/model/effort triple. */
+function sameSelection(a, b) {
+	if (a === b) return true;
+	if (!a || !b) return false;
+	return a.model === b.model && (a.effort ?? null) === (b.effort ?? null);
+}
+
+function aggregateSessions(archivedIds = []) {
+	const archivedSet = new Set(archivedIds);
+	const root = join(dshHome(), "sessions");
+	const summary = {
+		totalTokens: 0,
+		peakTokens: 0,
+		offPeakTokens: 0,
+		flatTokens: 0,
+		dailyPeakTokens: 0,
+		longestChatMs: 0,
+		currentStreak: 0,
+		longestStreak: 0,
+		days: {},
+		sessions: [],
+		modelEffort: {},
+		byModel: {}
+	};
+	if (!existsSync(root)) return summary;
+	const effectiveFromMs = Date.parse(pricing.data.effectiveFrom || FALLBACK_PRICING.effectiveFrom);
+	if (!Number.isFinite(effectiveFromMs)) return summary;
+	const weekendFromMs = Date.parse(pricing.data.weekendFrom || FALLBACK_PRICING.weekendFrom);
+
+	let wsDirs = [];
+	try { wsDirs = readdirSync(root); } catch { return summary; }
+	for (const wsDir of wsDirs) {
+		const wsPath = join(root, wsDir);
+		let sDirs = [];
+		try { sDirs = readdirSync(wsPath); } catch { continue; }
+		for (const sDir of sDirs) {
+			const sPath = join(wsPath, sDir);
+			const path = sessionLogPath(sPath);
+			if (path === null) continue;
+			let records;
+			try { records = readSessionRecords(path); } catch { continue; }
+			let header = null;
+			let title = null;
+			// `model`/`effort` follow the request header in force at each event, so
+			// every step is billed with the model that actually produced it.
+			let model = null;
+			let effort = null;
+			// Durable selection intent, mirroring DSH's own modelSelection projection:
+			// `pending` holds a switch that the next request has not consumed yet.
+			let lastUsed = null;
+			let pending = null;
+			let firstTime = null;
+			let lastTime = null;
+			let tokens = 0;
+			let peakTokens = 0;
+			let offPeakTokens = 0;
+			let flatTokens = 0;
+			const dayTokens = {};
+			const sessionByModel = {};
+			const dedupe = new Set();
+			{
+				const last = new Map();
+				for (const r of records) {
+					let key = null;
+					if (r.type === "assistant/message" && r.data?.usage) {
+						const t = r.data?.turn;
+						const s = r.data?.step;
+						if (t !== void 0 && s !== void 0) key = t + "|" + s;
+					} else if (r.type === "assistant/chunk" && r.data?.chunk?.type === "usage") {
+						const t = r.data?.turn;
+						const s = r.data?.step;
+						if (t !== void 0 && s !== void 0) key = t + "|" + s;
+					}
+					if (key !== null) last.set(key, r);
+				}
+				for (const r of last.values()) dedupe.add(r);
+			}
+			for (const r of records) {
+				if (r.type === "session" && header === null) { header = r; continue; }
+				if (r.type === "session/title" && r.data?.title) title = r.data.title;
+				if (r.type === "request/header") {
+					const hm = r.data?.header?.config?.model;
+					const he = r.data?.header?.config?.reasoningEffort;
+					if (hm !== void 0) {
+						model = hm;
+						effort = he ?? null;
+						lastUsed = { model: hm, effort: he ?? null };
+						if (sameSelection(pending, lastUsed)) pending = null;
+					}
+				}
+				if (r.type === "model/selection") {
+					const sm = r.data?.model;
+					if (typeof sm === "string" && sm !== "") {
+						const sel = { model: sm, effort: r.data?.reasoningEffort ?? null };
+						if (!sameSelection(pending, sel)) pending = sel;
+					}
+				}
+				const time = typeof r.time === "number" ? r.time : null;
+				if (time !== null) {
+					if (firstTime === null || time < firstTime) firstTime = time;
+					if (lastTime === null || time > lastTime) lastTime = time;
+				}
+				let usage = null;
+				if (r.type === "assistant/message" && r.data?.usage) usage = r.data.usage;
+				else if (r.type === "assistant/chunk" && r.data?.chunk?.type === "usage") usage = r.data.chunk.usage;
+				if (usage && time !== null && dedupe.has(r)) {
+					const t = (usage.inputTokens ?? 0) + (usage.outputTokens ?? 0) + (usage.cacheReadTokens ?? 0);
+					const modelId = resolveModelId(model);
+					const eraIdx = priceEraIndex(modelId, time);
+					const era = priceEraAt(modelId, time);
+					const period = era && era.legacy ? "flat" : periodOfUsage(time, effectiveFromMs, weekendFromMs);
+					const dayKey = beijingDayKey(time);
+					tokens += t;
+					if (period === "peak") peakTokens += t;
+					else if (period === "offPeak") offPeakTokens += t;
+					else flatTokens += t;
+					const mkModel = `${modelId}@${eraIdx}`;
+					const b = bucketsFrom(usage);
+					dayTokens[dayKey] = dayTokens[dayKey] || {};
+					dayTokens[dayKey][mkModel] = dayTokens[dayKey][mkModel] || { flat: zeroBucket(), peak: zeroBucket(), offPeak: zeroBucket() };
+					dayTokens[dayKey][mkModel][period] = addBucket(dayTokens[dayKey][mkModel][period], b);
+					summary.byModel[mkModel] = summary.byModel[mkModel] || { flat: zeroBucket(), peak: zeroBucket(), offPeak: zeroBucket() };
+					summary.byModel[mkModel][period] = addBucket(summary.byModel[mkModel][period], b);
+					sessionByModel[mkModel] = sessionByModel[mkModel] || { flat: zeroBucket(), peak: zeroBucket(), offPeak: zeroBucket() };
+					sessionByModel[mkModel][period] = addBucket(sessionByModel[mkModel][period], b);
+					const mk = `${model ?? ""}|${effort ?? ""}`;
+					summary.modelEffort[mk] = summary.modelEffort[mk] || { tokens: 0 };
+					summary.modelEffort[mk].tokens += t;
+				}
+			}
+			summary.totalTokens += tokens;
+			summary.peakTokens += peakTokens;
+			summary.offPeakTokens += offPeakTokens;
+			summary.flatTokens += flatTokens;
+			for (const [dayKey, d] of Object.entries(dayTokens)) {
+				summary.days[dayKey] = summary.days[dayKey] || { tokens: 0, peak: 0, offPeak: 0, flat: 0, byModel: {} };
+				const day = summary.days[dayKey];
+				const byModel = day.byModel;
+				const bucketTotal = (bucket) => bucket.uncachedInputTokens + bucket.outputTokens + bucket.cacheReadTokens;
+				let dayTotal = 0;
+				let dayPeak = 0;
+				let dayOff = 0;
+				let dayFlat = 0;
+				for (const [m, b] of Object.entries(d)) {
+					byModel[m] = byModel[m] || { flat: zeroBucket(), peak: zeroBucket(), offPeak: zeroBucket() };
+					byModel[m].flat = addBucket(byModel[m].flat, b.flat);
+					byModel[m].peak = addBucket(byModel[m].peak, b.peak);
+					byModel[m].offPeak = addBucket(byModel[m].offPeak, b.offPeak);
+					dayPeak += bucketTotal(b.peak);
+					dayOff += bucketTotal(b.offPeak);
+					dayFlat += bucketTotal(b.flat);
+					dayTotal += bucketTotal(b.peak) + bucketTotal(b.offPeak) + bucketTotal(b.flat);
+				}
+				day.tokens += dayTotal;
+				day.peak += dayPeak;
+				day.offPeak += dayOff;
+				day.flat += dayFlat;
+				if (day.tokens > summary.dailyPeakTokens) summary.dailyPeakTokens = day.tokens;
+			}
+			const duration = (lastTime ?? 0) - (firstTime ?? 0);
+			if (duration > summary.longestChatMs) summary.longestChatMs = duration;
+
+			const sid = header?.id ?? sDir.replace(/^session-/, "");
+			// What the NEXT request will use: an unconsumed switch wins over the
+			// model of the last request, exactly like the client-side projection.
+			const effective = pending ?? lastUsed;
+			summary.sessions.push({
+				id: sid,
+				title: title ?? header?.id ?? sDir,
+				cwd: header?.cwd ?? wsDir,
+				tokens,
+				peakTokens,
+				byModel: sessionByModel,
+				createdAt: header?.createdAt ?? firstTime,
+				endedAt: lastTime,
+				model: effective ? resolveModelId(effective.model) : null,
+				rawModel: effective?.model ?? null,
+				effort: effective?.effort ?? null,
+				archived: archivedSet.has(sid)
+			});
+		}
+	}
+
+	summary.sessions.sort((a, b) => b.tokens - a.tokens);
+
+	const dayKeys = Object.keys(summary.days).sort();
+	let longest = 0;
+	let run = 0;
+	let prev = null;
+	for (const d of dayKeys) {
+		if (prev === null) run = 1;
+		else {
+			const diff = Math.round((Date.parse(d) - Date.parse(prev)) / 86400000);
+			run = diff === 1 ? run + 1 : 1;
+		}
+		if (run > longest) longest = run;
+		prev = d;
+	}
+	summary.longestStreak = longest;
+
+	const daySet = new Set(dayKeys);
+	let cur = 0;
+	let cursor = Date.parse(beijingDayKey(Date.now()));
+	while (daySet.has(beijingDayKey(cursor))) {
+		cur++;
+		cursor -= 86400000;
+	}
+	summary.currentStreak = cur;
+
+	return summary;
+}
+
+const DEFAULT_MODEL = "deepseek-v4-pro";
+
+/** Compute spend (CNY/USD) from an aggregated usage summary, using the live pricing table. */
+function computeSpend(summary, currency = "CNY") {
+	const pricingSet =
+		(pricing.data.currencies && pricing.data.currencies[currency]) ||
+		pricing.data.currencies?.CNY ||
+		FALLBACK_PRICING.currencies.CNY;
+	const models = pricingSet.models || {};
+	const priceOf = (tokens, price) => (tokens || 0) * (price || 0) / 1e6;
+	const eraCost = (b, era) => {
+		if (!era) return 0;
+		const cost = (bucket, price) => {
+			if (!price) return 0;
+			return priceOf(bucket.uncachedInputTokens, price.miss)
+				+ priceOf(bucket.cacheWriteTokens, price.miss)
+				+ priceOf(bucket.cacheReadTokens, price.hit)
+				+ priceOf(bucket.outputTokens, price.output);
+		};
+		if (era.legacy) return cost(b.flat, era.legacy);
+		return cost(b.peak, era.peak) + cost(b.offPeak, era.offPeak);
+	};
+	// Bucket keys are `${modelId}@${eraIndex}` so each token is billed at the
+	// price era in force when it was used.
+	const bucketCost = (b, key) => {
+		const at = typeof key === "string" ? key.lastIndexOf("@") : -1;
+		if (at < 0) return 0;
+		const modelId = key.slice(0, at);
+		const eraIdx = Number(key.slice(at + 1));
+		const mm = models[modelId];
+		if (!mm || !Array.isArray(mm.eras)) return 0;
+		const era = mm.eras[Number.isFinite(eraIdx) ? eraIdx : 0] || mm.eras[mm.eras.length - 1];
+		return eraCost(b, era);
+	};
+	let total = 0;
+	for (const [k, b] of Object.entries(summary.byModel || {})) {
+		total += bucketCost(b, k);
+	}
+	const day = (summary.days || {})[beijingDayKey(Date.now())];
+	let today = null;
+	if (day) {
+		today = 0;
+		for (const [k, b] of Object.entries(day.byModel || {})) today += bucketCost(b, k);
+	}
+	return { total, today, currency };
+}
+
+const usageCache = { data: null, at: 0, currency: null };
+const USAGE_CACHE_TTL_MS = 30000;
+
+function tokenNameFile() {
+	return join(dshHome(), "deepseek-balance.json");
+}
+
+function readTokenName() {
+	try {
+		const p = tokenNameFile();
+		if (!existsSync(p)) return null;
+		const d = JSON.parse(readFileSync(p, "utf8"));
+		return typeof d.tokenName === "string" && d.tokenName.trim() ? d.tokenName.trim() : null;
+	} catch { return null; }
+}
+
+function writeTokenName(name) {
+	try { mkdirSync(dshHome(), { recursive: true }); } catch {}
+	writeFileSync(tokenNameFile(), JSON.stringify({ tokenName: name }), "utf8");
+}
+
+function resolveTokenName(config) {
+	return readTokenName() || config.tokenName || "API key";
+}
+
+async function maskApiKey(ctx) {
+	try {
+		const { apiKey } = await resolveDeepSeekFacts(ctx);
+		return apiKey.length > 12 ? `${apiKey.slice(0, 8)}*****${apiKey.slice(-4)}` : `${apiKey.slice(0, 8)}****`;
+	} catch {
+		return null;
+	}
+}
+
+function apply(ctx, config = {}) {
+	const balanceHandler = async (req, res) => {
+		if (req.method !== "GET" && req.method !== "HEAD") {
+			json(res, 405, { error: "method not allowed" });
+			return;
+		}
+		if (!isTrustedRead(req)) {
+			json(res, 403, { error: "forbidden" });
+			return;
+		}
+		try {
+			const { apiKey, baseURL } = await resolveDeepSeekFacts(ctx);
+			const upstream = await fetch(`${baseURL}/user/balance`, {
+				method: "GET",
+				headers: {
+					authorization: `Bearer ${apiKey}`,
+					accept: "application/json"
+				},
+				signal: AbortSignal.timeout(UPSTREAM_TIMEOUT_MS)
+			});
+			const body = await upstream.json().catch(() => ({}));
+			if (!upstream.ok) {
+				const message = body?.error?.message || `DeepSeek balance API HTTP ${upstream.status}`;
+				json(res, upstream.status === 401 || upstream.status === 403 ? 401 : 502, { error: message });
+				return;
+			}
+			if (typeof body?.currency === "string" && body.currency.length > 0) usageCache.currency = body.currency;
+			json(res, 200, body);
+		} catch (error) {
+			json(res, 502, { error: error instanceof Error ? error.message : String(error) });
+		}
+	};
+
+	const pricingHandler = async (req, res) => {
+		if (req.method !== "GET" && req.method !== "HEAD") {
+			json(res, 405, { error: "method not allowed" });
+			return;
+		}
+		if (!isTrustedRead(req)) {
+			json(res, 403, { error: "forbidden" });
+			return;
+		}
+		if (pricing.fetchedAt === 0) {
+			try {
+				await refreshPricing(ctx);
+			} catch {}
+		}
+		json(res, 200, {
+			...pricing.data,
+			fetchedAt: pricing.fetchedAt,
+			source: pricing.source
+		});
+	};
+
+	ctx.effect(() => ctx.webServer.register({ kind: "exact", path: "/api/deepseek-balance", handler: balanceHandler }), "deepseek-balance: /api/deepseek-balance route");
+	ctx.effect(() => ctx.webServer.register({ kind: "exact", path: "/api/deepseek-pricing", handler: pricingHandler }), "deepseek-balance: /api/deepseek-pricing route");
+
+	const usageHandler = async (req, res) => {
+		if (req.method !== "GET" && req.method !== "HEAD") {
+			json(res, 405, { error: "method not allowed" });
+			return;
+		}
+		if (!isTrustedRead(req)) {
+			json(res, 403, { error: "forbidden" });
+			return;
+		}
+		if (usageCache.at === 0 || Date.now() - usageCache.at > USAGE_CACHE_TTL_MS) {
+			try {
+				const ws = ctx.get("workspaceRegistry");
+				usageCache.data = aggregateSessions(ws?.archivedSessionIds ?? []);
+				usageCache.data.spend = computeSpend(usageCache.data, usageCache.currency || "CNY");
+				usageCache.at = Date.now();
+			} catch (error) {
+				if (ctx?.logger?.warn) ctx.logger.warn(`deepseek-balance: usage aggregation failed: ${error instanceof Error ? error.message : String(error)}`);
+			}
+		}
+		const key = await maskApiKey(ctx);
+		let payload = usageCache.data;
+		if (!payload) {
+			payload = aggregateSessions();
+			payload.spend = computeSpend(payload, usageCache.currency || "CNY");
+		}
+		let query = null;
+		try { query = new URL(req.url, "http://dsh.local").searchParams; } catch {}
+		const sessionId = query ? query.get("session") : null;
+		if (sessionId && sessionId.length > 0) {
+			const s = (payload.sessions || []).find((x) => x.id === sessionId);
+			if (s) {
+				json(res, 200, {
+					id: s.id,
+					title: s.title,
+					tokens: s.tokens,
+					model: s.model ?? null,
+					rawModel: s.rawModel ?? null,
+					effort: s.effort ?? null,
+					spend: computeSpend({ byModel: s.byModel || {} }, usageCache.currency || "CNY"),
+					apiKeyPreview: key,
+					tokenName: resolveTokenName(config),
+					effectiveFrom: pricing.data.effectiveFrom, weekendFrom: pricing.data.weekendFrom,
+					fetchedAt: usageCache.at,
+					source: pricing.source
+				});
+				return;
+			}
+			json(res, 200, {
+				id: sessionId,
+				title: sessionId,
+				tokens: 0,
+				model: null,
+				rawModel: null,
+				effort: null,
+				spend: { total: 0, today: null, currency: usageCache.currency || "CNY" },
+				apiKeyPreview: key,
+				tokenName: resolveTokenName(config),
+				effectiveFrom: pricing.data.effectiveFrom,
+				fetchedAt: usageCache.at,
+				source: pricing.source
+			});
+			return;
+		}
+		json(res, 200, {
+			...payload,
+			apiKeyPreview: key,
+			tokenName: resolveTokenName(config),
+			effectiveFrom: pricing.data.effectiveFrom,
+			fetchedAt: usageCache.at,
+			source: pricing.source
+		});
+	};
+
+	ctx.effect(() => ctx.webServer.register({ kind: "exact", path: "/api/deepseek-usage", handler: usageHandler }), "deepseek-balance: /api/deepseek-usage route");
+
+	const tokenNameHandler = async (req, res) => {
+		if (!isTrustedRead(req)) {
+			json(res, 403, { error: "forbidden" });
+			return;
+		}
+		if (req.method === "GET" || req.method === "HEAD") {
+			json(res, 200, { tokenName: resolveTokenName(config) });
+			return;
+		}
+		if (req.method === "POST") {
+			let raw = "";
+			try {
+				const chunks = [];
+				for await (const c of req) chunks.push(c);
+				raw = Buffer.concat(chunks).toString("utf8");
+				const body = raw ? JSON.parse(raw) : {};
+				const name = typeof body.tokenName === "string" && body.tokenName.trim() ? body.tokenName.trim().slice(0, 64) : "API key";
+				writeTokenName(name);
+				json(res, 200, { tokenName: name });
+			} catch (error) {
+				json(res, 400, { error: error instanceof Error ? error.message : String(error) });
+			}
+			return;
+		}
+		json(res, 405, { error: "method not allowed" });
+	};
+
+	ctx.effect(() => ctx.webServer.register({ kind: "exact", path: "/api/deepseek-balance/token-name", handler: tokenNameHandler }), "deepseek-balance: /api/deepseek-balance/token-name route");
+
+	ctx.effect(() => {
+		refreshPricing(ctx).catch(() => {});
+		let timer;
+		const schedule = () => {
+			const delay = msUntilNextHourBeijing(1);
+			timer = setTimeout(async () => {
+				await refreshPricing(ctx).catch(() => {});
+				schedule();
+			}, delay);
+		};
+		schedule();
+		return () => clearTimeout(timer);
+	}, "deepseek-balance: daily 01:00 Beijing pricing refresh");
+}
+
+export { Config, FALLBACK_PRICING, PEAK_WINDOWS, apply, inject, name, periodOfUsage };

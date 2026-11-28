@@ -1,0 +1,5 @@
+# dsh-deepseek-balance bundle patch: inserts this plugin row into the host composition.
+- insert:
+    - id: deepseek-balance
+      name: '@user-7392/dsh-deepseek-balance'
+      config: {}

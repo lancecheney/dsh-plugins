@@ -1,0 +1,190 @@
+{
+  "$comment": "Conformance vectors for DeepSeek's peak/off-peak billing rule. Public domain (CC0-1.0). Corrections welcome.",
+  "source": {
+    "url": "https://api-docs.deepseek.com/quick_start/pricing/",
+    "read_on": "2026-08-22",
+    "quote": "Effective 00:00 (Beijing Time) on Sunday, August 23, 2026, we will adjust our peak/off-peak billing rules, with off-peak rates applying throughout the day on weekends."
+  },
+  "generated_for": "2026-08-23",
+  "schedules": {
+    "deepseek-live-2026-08-23": {
+      "note": "DeepSeek's published schedule as of 2026-08-23. Peak windows are given in UTC; the calendar the weekend rule is read on is Asia/Shanghai.",
+      "calendar_timezone": "Asia/Shanghai",
+      "calendar_utc_offset_hours": 8,
+      "peak_windows_utc": [
+        [
+          "01:00",
+          "04:00"
+        ],
+        [
+          "06:00",
+          "10:00"
+        ]
+      ],
+      "peak_weekdays": [
+        1,
+        2,
+        3,
+        4,
+        5
+      ],
+      "peak_weekdays_note": "ISO-8601 weekday numbers, 1 = Monday. Read on calendar_timezone, not on UTC. Both statements are load-bearing: an implementation that hard-codes Saturday and Sunday agrees with this field at all 168 hours of the live schedule, and one that reads the weekday off the UTC instant agrees with it everywhere except 16:00-24:00 UTC.",
+      "weekend_offpeak_effective_utc": "2026-08-22T16:00:00Z",
+      "offpeak_multiplier": 0.5
+    },
+    "synthetic-overnight-peak": {
+      "note": "NOT a real vendor schedule. Its peak window deliberately covers 16:00-24:00 UTC, the only stretch where the UTC and Beijing calendars disagree. The live schedule cannot expose a wrong-calendar weekday read; this one can.",
+      "calendar_timezone": "Asia/Shanghai",
+      "calendar_utc_offset_hours": 8,
+      "peak_windows_utc": [
+        [
+          "16:00",
+          "22:00"
+        ]
+      ],
+      "peak_weekdays": [
+        1,
+        2,
+        3,
+        4,
+        5
+      ],
+      "peak_weekdays_note": "ISO-8601 weekday numbers, 1 = Monday. Read on calendar_timezone, not on UTC. Both statements are load-bearing: an implementation that hard-codes Saturday and Sunday agrees with this field at all 168 hours of the live schedule, and one that reads the weekday off the UTC instant agrees with it everywhere except 16:00-24:00 UTC.",
+      "weekend_offpeak_effective_utc": "2026-08-22T16:00:00Z",
+      "offpeak_multiplier": 0.5
+    }
+  },
+  "vectors": [
+    {
+      "schedule": "deepseek-live-2026-08-23",
+      "at_utc": "2026-08-24T01:30:00Z",
+      "beijing_local": "Mon 09:30",
+      "expect": "peak",
+      "why": "inside the first daily peak window"
+    },
+    {
+      "schedule": "deepseek-live-2026-08-23",
+      "at_utc": "2026-08-24T04:00:00Z",
+      "beijing_local": "Mon 12:00",
+      "expect": "offpeak",
+      "why": "window end is exclusive"
+    },
+    {
+      "schedule": "deepseek-live-2026-08-23",
+      "at_utc": "2026-08-24T05:59:59Z",
+      "beijing_local": "Mon 13:59:59",
+      "expect": "offpeak",
+      "why": "the gap between the two daily windows"
+    },
+    {
+      "schedule": "deepseek-live-2026-08-23",
+      "at_utc": "2026-08-24T06:00:00Z",
+      "beijing_local": "Mon 14:00",
+      "expect": "peak",
+      "why": "window start is inclusive"
+    },
+    {
+      "schedule": "deepseek-live-2026-08-23",
+      "at_utc": "2026-08-24T09:59:59Z",
+      "beijing_local": "Mon 17:59:59",
+      "expect": "peak",
+      "why": "last second of the second window"
+    },
+    {
+      "schedule": "deepseek-live-2026-08-23",
+      "at_utc": "2026-08-24T10:00:00Z",
+      "beijing_local": "Mon 18:00",
+      "expect": "offpeak",
+      "why": "window end is exclusive"
+    },
+    {
+      "schedule": "deepseek-live-2026-08-23",
+      "at_utc": "2026-08-23T01:30:00Z",
+      "beijing_local": "Sun 09:30",
+      "expect": "offpeak",
+      "why": "weekend overrides a daily peak window"
+    },
+    {
+      "schedule": "deepseek-live-2026-08-23",
+      "at_utc": "2026-08-23T07:00:00Z",
+      "beijing_local": "Sun 15:00",
+      "expect": "offpeak",
+      "why": "weekend overrides the second daily window"
+    },
+    {
+      "schedule": "deepseek-live-2026-08-23",
+      "at_utc": "2026-08-29T02:00:00Z",
+      "beijing_local": "Sat 10:00",
+      "expect": "offpeak",
+      "why": "Saturday is off-peak all day"
+    },
+    {
+      "schedule": "deepseek-live-2026-08-23",
+      "at_utc": "2026-08-22T01:30:00Z",
+      "beijing_local": "Sat 09:30",
+      "expect": "peak",
+      "why": "before the rule took effect: not retroactive"
+    },
+    {
+      "schedule": "deepseek-live-2026-08-23",
+      "at_utc": "2026-08-22T09:59:59Z",
+      "beijing_local": "Sat 17:59:59",
+      "expect": "peak",
+      "why": "last peak second before the rule took effect"
+    },
+    {
+      "schedule": "deepseek-live-2026-08-23",
+      "at_utc": "2026-08-22T16:00:00Z",
+      "beijing_local": "Sun 00:00",
+      "expect": "offpeak",
+      "why": "the first instant the rule applies"
+    },
+    {
+      "schedule": "synthetic-overnight-peak",
+      "at_utc": "2026-08-28T16:30:00Z",
+      "beijing_local": "Sat 00:30",
+      "expect": "offpeak",
+      "why": "UTC says Friday, Beijing says Saturday. Reading the weekday off the unshifted instant gives peak."
+    },
+    {
+      "schedule": "synthetic-overnight-peak",
+      "at_utc": "2026-08-30T16:30:00Z",
+      "beijing_local": "Mon 00:30",
+      "expect": "peak",
+      "why": "UTC says Sunday, Beijing says Monday. Reading the weekday off the unshifted instant gives offpeak."
+    },
+    {
+      "schedule": "synthetic-overnight-peak",
+      "at_utc": "2026-08-29T17:00:00Z",
+      "beijing_local": "Sun 01:00",
+      "expect": "offpeak",
+      "why": "UTC says Saturday, Beijing says Sunday: both calendars call it the weekend. Included so a failure on the two above cannot be blamed on the synthetic window itself."
+    }
+  ],
+  "next_boundary_vectors": [
+    {
+      "schedule": "deepseek-live-2026-08-23",
+      "from_utc": "2026-08-28T10:30:00Z",
+      "beijing_local": "Fri 18:30",
+      "expect_next_change_utc": "2026-08-31T01:00:00Z",
+      "expect_next_phase": "peak",
+      "why": "Both sides of every boundary inside the weekend are off-peak, so the next real change is Monday 09:00 Beijing, about 63 hours out. A countdown that stops at the next window edge hits zero with nothing changing."
+    },
+    {
+      "schedule": "deepseek-live-2026-08-23",
+      "from_utc": "2026-08-24T02:00:00Z",
+      "beijing_local": "Mon 10:00",
+      "expect_next_change_utc": "2026-08-24T04:00:00Z",
+      "expect_next_phase": "offpeak",
+      "why": "ordinary in-window case"
+    },
+    {
+      "schedule": "deepseek-live-2026-08-23",
+      "from_utc": "2026-08-21T18:00:00Z",
+      "beijing_local": "Sat 02:00 (pre-rule)",
+      "expect_next_change_utc": "2026-08-22T01:00:00Z",
+      "expect_next_phase": "peak",
+      "why": "before the effective instant the weekend must not be skipped; the gate is on the candidate instant, not on 'now'"
+    }
+  ]
+}

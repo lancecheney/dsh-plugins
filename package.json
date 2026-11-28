@@ -1,0 +1,8 @@
+{
+  "name": "dsh-plugins",
+  "version": "0.0.0",
+  "private": true,
+  "description": "user-7392's collection of DeepSeek Harness (DSH) plugins",
+  "type": "module",
+  "license": "MIT"
+}
